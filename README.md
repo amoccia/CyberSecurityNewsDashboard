@@ -1,1 +1,0 @@
-Go to index.html.
