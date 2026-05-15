@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyber Security News Dashboard</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --primary: #00ff9f;
+      --primary-dim: #00cc7a;
+      --card-bg: #111;
+      --border: rgba(0, 255, 159, 0.2);
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--primary);
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.5;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      font-size: clamp(1.2rem, 4vw, 2rem);
+      text-shadow: 0 0 20px var(--primary);
+      margin: 0 0 10px 0;
+    }
+    .header time {
+      font-size: 0.85rem;
+      opacity: 0.7;
+    }
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 25px;
+    }
+    .stat {
+      padding: 8px 15px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      background: var(--card-bg);
+    }
+    .stat.critical { border-color: #ff4444; }
+    .stat.high { border-color: #ff8c00; }
+    .stat.medium { border-color: #ffd700; }
+    .stat.low { border-color: var(--primary-dim); }
+    .controls {
+      max-width: 900px;
+      margin: 0 auto 25px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .search-wrapper {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+    .search-wrapper::before {
+      content: '🔍';
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+    }
+    input {
+      width: 100%;
+      padding: 10px 10px 10px 35px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--primary);
+      font-family: inherit;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .filter-buttons {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 10px 15px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--primary);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    button:hover, button.active {
+      background: var(--primary);
+      color: var(--bg);
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      display: grid;
+      gap: 15px;
+    }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 15px;
+      background: var(--card-bg);
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .index {
+      font-size: 12px;
+      opacity: 0.6;
+    }
+    .badge {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    .critical { background: #ff4444; color: #fff; }
+    .high { background: #ff8c00; color: #000; }
+    .medium { background: #ffd700; color: #000; }
+    .low { background: var(--primary-dim); color: #000; }
+    .card-title {
+      display: block;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: bold;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .card-title:hover { text-decoration: underline; }
+    .card-desc {
+      font-size: 12px;
+      color: var(--primary-dim);
+      margin: 0;
+    }
+    .no-results {
+      text-align: center;
+      padding: 40px;
+      opacity: 0.6;
+      display: none;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      opacity: 0.6;
+      text-align: center;
+    }
+    @media (max-width: 600px) {
+      .controls { flex-direction: column; }
+      .filter-buttons { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🛡️ CYBER SECURITY NEWS DASHBOARD</h1>
+  <time datetime="2026-05-15T14:04:15.722Z">15/05/2026, 14:04</time>
+</div>
+
+<div class="stats">
+  <div class="stat">📊 Totale: <strong>137</strong></div>
+  <div class="stat critical">🔴 Critical: <strong>12</strong></div>
+  <div class="stat high">🟠 High: <strong>11</strong></div>
+  <div class="stat medium">🟡 Medium: <strong>9</strong></div>
+  <div class="stat low">🟢 Low: <strong>105</strong></div>
+</div>
+
+<div class="controls">
+  <div class="search-wrapper">
+    <input type="search" id="search" placeholder="Cerca nelle notizie..." aria-label="Cerca">
+  </div>
+  <div class="filter-buttons">
+    <button class="active" data-filter="all">Tutte</button>
+    <button data-filter="critical">Critical</button>
+    <button data-filter="high">High</button>
+    <button data-filter="medium">Medium</button>
+    <button data-filter="low">Low</button>
+  </div>
+</div>
+
+<div class="container" id="cards">
+  
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#01</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-104-cisa-adds-cisco-sd-wan-cve-2026-20182-to-kev-after.html" class="card-title">CISA Adds Cisco SD-WAN CVE-2026-20182 to KEV After Admin Access Exploits</a>
+      <p class="card-desc">The U.S.Cybersecurity and Infrastructure Security Agency (CISA) on Thursday added a newly disclosed vulnerability impacting Cisco Catalyst S...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#02</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-109-microsoft-warns-of-exchange-zero-day-flaw-exploite.html" class="card-title">Microsoft warns of Exchange zero-day flaw exploited in attacks</a>
+      <p class="card-desc">On Thursday, Microsoft shared mitigations for a high-severity Exchange Server vulnerability exploited in attacks that allow threat actors to...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#03</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-111-hackers-exploit-auth-bypass-flaw-in-burst-statisti.html" class="card-title">Hackers exploit auth bypass flaw in Burst Statistics WordPress plugin</a>
+      <p class="card-desc">Hackers are leveraging a critical authentication bypass vulnerability in the WordPress plugin Burst Statistics to obtain admin-level access ...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#04</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-112-cisco-warns-of-new-critical-sd-wan-flaw-exploited-.html" class="card-title">Cisco warns of new critical SD-WAN flaw exploited in zero-day attacks</a>
+      <p class="card-desc">Cisco is warning that a critical Catalyst SD-WAN Controller authentication bypass flaw, tracked as CVE-2026-20182, was actively exploited in...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#05</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-115-18-year-old-nginx-vulnerability-allows-dos-potenti.html" class="card-title">18-year-old NGINX vulnerability allows DoS, potential RCE</a>
+      <p class="card-desc">An 18-year-old flaw in the NGINX open-source web server, discovered using an autonomous scanning system, can be exploited for denial of serv...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#06</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-120-maximum-severity-cisco-sd-wan-bug-exploited-in-the.html" class="card-title">Maximum Severity Cisco SD-WAN Bug Exploited in the Wild</a>
+      <p class="card-desc">This is the second time this year a threat actor has leveraged a CVSS 10.0 vulnerability in Cisco&#39;s network control system.</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#07</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-122-microsoft-edge-windows-11-and-litellm-hacked-in-pw.html" class="card-title">Microsoft Edge, Windows 11 and LiteLLM Hacked in Pwn2Own Berlin 2026</a>
+      <p class="card-desc">Pwn2Own Berlin 2026 opened with a surge of zero-day exploits targeting modern browsers, operating systems, and emerging AI platforms. On Day...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#08</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-126-praisonai-vulnerability-exploited-within-hours-of-.html" class="card-title">PraisonAI Vulnerability Exploited Within Hours of Public Disclosure</a>
+      <p class="card-desc">As artificial intelligence frameworks become central to enterprise operations, a critical flaw in a popular AI platform has exposed organiza...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#09</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-127-amazon-redshift-jdbc-driver-vulnerabilities-enable.html" class="card-title">Amazon Redshift JDBC Driver Vulnerabilities Enables Remote Code Execution Attacks</a>
+      <p class="card-desc">A critical vulnerability in the Amazon Redshift JDBC driver has put enterprise applications at severe risk of Remote Code Execution (RCE). T...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#10</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-132-microsoft-warns-of-exchange-server-zero-day-exploi.html" class="card-title">Microsoft Warns of Exchange Server Zero-Day Exploited in the Wild</a>
+      <p class="card-desc">Microsoft has shared mitigations for CVE-2026-42897 until a permanent patch can be released for affected Exchange Server versions. The post ...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#11</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-136-chrome-148-update-patches-critical-vulnerabilities.html" class="card-title">Chrome 148 Update Patches Critical Vulnerabilities</a>
+      <p class="card-desc">The refresh resolves critical-severity use-after-free and other types of bugs in various browser components. The post Chrome 148 Update Patc...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#12</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-137-cisco-patches-another-sd-wan-zero-day-the-sixth-ex.html" class="card-title">Cisco Patches Another SD-WAN Zero-Day, the Sixth Exploited in 2026</a>
+      <p class="card-desc">The zero-day, tracked as CVE-2026-20182, has been exploited in targeted attacks by a sophisticated threat actor identified as UAT-8616. The ...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#13</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-7-cve-2026-41968-huawei-harmonyos-5-1-0-6-0-0-6-1-0-.html" class="card-title">CVE-2026-41968 | Huawei HarmonyOS 5.1.0/6.0.0/6.1.0 Manufacturability Design Local Privilege Escalation</a>
+      <p class="card-desc">In Huawei HarmonyOS 5.1.0/6.0.0/6.1.0 è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzione sconosc...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#14</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-8-cve-2026-41967-huawei-harmonyos-5-1-0-6-0-0-manufa.html" class="card-title">CVE-2026-41967 | Huawei HarmonyOS 5.1.0/6.0.0 Manufacturability Design Local Privilege Escalation</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in Huawei HarmonyOS 5.1.0/6.0.0. Risulta coinvolta una funzione sconosciuta del co...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#15</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-13-cve-2026-41961-huawei-harmonyos-5-1-0-6-0-0-6-1-0-.html" class="card-title">CVE-2026-41961 | Huawei HarmonyOS 5.1.0/6.0.0/6.1.0 Local Privilege Escalation</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Huawei HarmonyOS 5.1.0/6.0.0/6.1.0. Si considera coinvolta una funzione...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#16</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-41-cve-2026-0427-amd-radeon-pro-v710-local-privilege-.html" class="card-title">CVE-2026-0427 | AMD Radeon PRO V710 Local Privilege Escalation</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in AMD Instinct MI210, Instinct MI300X, Instinct MI325X and Radeon PRO V710. ...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#17</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-43-cve-2025-48513-amd-ryzen-7035-processors-with-rade.html" class="card-title">CVE-2025-48513 | AMD Ryzen 7035 Processors with Radeon Graphics Kernel Memory Local Privilege Escalation</a>
+      <p class="card-desc">In AMD Ryzen 7035 Processors with Radeon Graphics, Ryzen 7040 Mobile Processors with Radeon Graphics, Ryzen 8040 Mobile Processors with Rade...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#18</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-60-cve-2024-21962-amd-epyc-4005-processors-amd-raid-d.html" class="card-title">CVE-2024-21962 | AMD EPYC 4005 Processors AMD RAID Driver Local Privilege Escalation</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come critico in AMD EPYC 4005 Processors, EPYC 4004 Processors, Ryzen Threadripper PRO 3000 W...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#19</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-61-cve-2023-31316-amd-radeon-pro-v620-configuration-l.html" class="card-title">CVE-2023-31316 | AMD Radeon PRO V620 Configuration Local Privilege Escalation</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in AMD Ryzen 5000 Mobile Processors with Radeon Graphics, Ryzen 7000 Deskt...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#20</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-73-cve-2026-0438-amd-ryzen-7040-mobile-processors-wit.html" class="card-title">CVE-2026-0438 | AMD Ryzen 7040 Mobile Processors with Radeon Graphics Local Privilege Escalation</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come critico in AMD Ryzen 7040 Mobile Processors with Radeon Graphics, Ryzen 7045 Mobile Pro...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#21</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-105-cisco-catalyst-sd-wan-controller-auth-bypass-activ.html" class="card-title">Cisco Catalyst SD-WAN Controller Auth Bypass Actively Exploited to Gain Admin Access</a>
+      <p class="card-desc">Cisco has released updates to address a maximum-severity authentication bypass flaw in Catalyst SD-WAN Controller that it said has been expl...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#22</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-130-microsoft-details-kazuar-malware-s-modular-archite.html" class="card-title">Microsoft Details Kazuar Malware’s Modular Architecture and P2P Botnet Operations</a>
+      <p class="card-desc">A nation-state malware known as Kazuar has resurfaced with a far more dangerous design than anyone expected. What once started as a relative...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#23</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-131-vmware-fusion-vulnerability-let-attackers-escalate.html" class="card-title">VMware Fusion Vulnerability Let Attackers Escalate Privilege to Root</a>
+      <p class="card-desc">A high-severity privilege escalation vulnerability has been discovered in VMware Fusion, Broadcom&amp;#8217;s popular macOS virtualization softw...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#24</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-15-cve-2026-8425-pektsekye-notify-odoo-plugin-fino-a-.html" class="card-title">CVE-2026-8425 | pektsekye Notify Odoo Plugin fino a 1.0.1 su WordPress Setting _updateSettings cross site request forgery (EUVD-2026-30520)</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in pektsekye Notify Odoo Plugin fino a 1.0.1 su WordPress. Da questa vu...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#25</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-16-cve-2026-6415-justinkruit-advanced-custom-fields-p.html" class="card-title">CVE-2026-6415 | justinkruit Advanced Custom Fields Plugin fino a 5.0.2 su WordPress update_preview cross site scripting (EUVD-2026-30521)</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in justinkruit Advanced Custom Fields Plugin fino a 5.0.2. É interessato la funz...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#26</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-28-cve-2026-6646-dream-theme-the7-plugin-fino-a-14-3-.html" class="card-title">CVE-2026-6646 | Dream-Theme The7 Plugin fino a 14.3.2 su WordPress Shortcode dt_default_button cross site scripting</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in Dream-Theme The7 Plugin fino a 14.3.2. É interessato la funzione dt_default_b...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#27</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-29-cve-2026-28761-fujitsu-musetheque-cross-site-reque.html" class="card-title">CVE-2026-28761 | Fujitsu Musetheque cross site request forgery</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Fujitsu Musetheque. Riguarda una funzione sconosciuta. Mediante la manipol...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#28</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-31-cve-2026-24662-fujitsu-musetheque-fino-a-2203-0-cr.html" class="card-title">CVE-2026-24662 | Fujitsu Musetheque fino a 2203.0 cross site scripting</a>
+      <p class="card-desc">In Fujitsu Musetheque fino a 2203.0 è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzione sconosciu...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#29</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-63-cve-2026-44541-ethyca-fides-fides-js-fides-descrip.html" class="card-title">CVE-2026-44541 | Ethyca Fides fides.js fides_description cross site scripting</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in Ethyca Fides. Da questa vulnerabilità è interessato una funzione sco...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#30</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-71-cve-2026-45375-siyuan-fino-a-3-6-5-setting-plugin-.html" class="card-title">CVE-2026-45375 | SiYuan fino a 3.6.5 Setting plugin.json cross site scripting (GHSA-27qc-m5gf-jv5r)</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in SiYuan fino a 3.6.5. Riguarda una funzione sconosciuta del file plugin.json de...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#31</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-80-cve-2026-44670-siyuan-fino-a-3-6-x-transaction-cro.html" class="card-title">CVE-2026-44670 | SiYuan fino a 3.6.x Transaction cross site scripting (GHSA-2h64-c999-c9r6)</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in SiYuan fino a 3.6.x. Risulta coinvolta una funzione sconosciuta del componente ...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#32</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-103-on-prem-microsoft-exchange-server-cve-2026-42897-e.html" class="card-title">On-Prem Microsoft Exchange Server CVE-2026-42897 Exploited via Crafted Email</a>
+      <p class="card-desc">Microsoft has disclosed a new security vulnerability impacting on-premise versions of Exchange Server that it said has come under active exp...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#33</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-1-cve-2026-41962-huawei-harmonyos-6-0-0-6-1-0-escala.html" class="card-title">CVE-2026-41962 | Huawei HarmonyOS 6.0.0/6.1.0 escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come critico in Huawei HarmonyOS 6.0.0/6.1.0. Si considera coinvolta una funzione sconosciut...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#34</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-2-cve-2026-41971-huawei-harmonyos-5-1-0-6-0-0-securi.html" class="card-title">CVE-2026-41971 | Huawei HarmonyOS 5.1.0/6.0.0 Security Control rivelazione di informazioni</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Huawei HarmonyOS 5.1.0/6.0.0. Risulta coinvolta una funzione sconosciut...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#35</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-3-cve-2026-8454-tonyc-imager-file-gif-fino-a-1-002-s.html" class="card-title">CVE-2026-8454 | TONYC Imager::File::GIF fino a 1.002 su Perl imgif.c i_readgif_multi_low buffer overflow</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in TONYC Imager::File::GIF fino a 1.002 su Perl. Da questa vulnerabilità è i...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#36</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-4-cve-2026-8503-guimard-apache-session-generate-sha2.html" class="card-title">CVE-2026-8503 | GUIMARD Apache::Session::Generate::SHA256 fino a 1.3.18 su Perl rand rivelazione di informazioni</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in GUIMARD Apache::Session::Generate::SHA256 fino a 1.3.18. É interessato la fun...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#37</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-5-cve-2026-41970-huawei-harmonyos-emui-distributed-f.html" class="card-title">CVE-2026-41970 | Huawei HarmonyOS/EMUI Distributed File System buffer overflow</a>
+      <p class="card-desc">Un punto di criticita di livello critico è stato rilevato in Huawei HarmonyOS and EMUI. Riguarda una funzione sconosciuta del componente Dis...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#38</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-6-cve-2026-41969-huawei-harmonyos-emui-projection-es.html" class="card-title">CVE-2026-41969 | Huawei HarmonyOS/EMUI Projection escalationi di privilegi</a>
+      <p class="card-desc">In Huawei HarmonyOS and EMUI è stato trovato un punto critico di livello critico. Viene interessata una funzione sconosciuta appartenente al...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#39</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-9-cve-2026-41966-huawei-harmonyos-5-1-0-6-0-0-6-1-0-.html" class="card-title">CVE-2026-41966 | Huawei HarmonyOS 5.1.0/6.0.0/6.1.0 Smart Sensing Service Esecuzione di codice remoto</a>
+      <p class="card-desc">In Huawei HarmonyOS 5.1.0/6.0.0/6.1.0 stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato una funzion...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#40</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-10-cve-2026-41965-huawei-harmonyos-6-0-0-6-1-0-esecuz.html" class="card-title">CVE-2026-41965 | Huawei HarmonyOS 6.0.0/6.1.0 Esecuzione di codice remoto</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello critico in Huawei HarmonyOS 6.0.0/6.1.0. É interessato una funzione sconosciuta. La manipolazi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#41</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-11-cve-2026-41964-huawei-harmonyos-6-0-0-6-1-0-race-c.html" class="card-title">CVE-2026-41964 | Huawei HarmonyOS 6.0.0/6.1.0 race condition</a>
+      <p class="card-desc">Una vulnerabilità di livello critico è stata rilevata in Huawei HarmonyOS 6.0.0/6.1.0. Riguarda una funzione sconosciuta. Attraverso l&#39;influ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#42</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-12-cve-2026-41963-huawei-harmonyos-6-0-0-6-1-0-buffer.html" class="card-title">CVE-2026-41963 | Huawei HarmonyOS 6.0.0/6.1.0 buffer overflow</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come critico in Huawei HarmonyOS 6.0.0/6.1.0. Viene interessata una funzione sconosciuta. Per...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#43</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-14-cve-2026-41960-huawei-harmonyos-emui-negazione-del.html" class="card-title">CVE-2026-41960 | Huawei HarmonyOS/EMUI negazione del servizio</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Huawei HarmonyOS and EMUI. Risulta coinvolta una funzione sconosciuta. ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#44</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-17-cve-2026-8398-avb-disc-soft-daemon-tools-lite-fino.html" class="card-title">CVE-2026-8398 | AVB Disc Soft DAEMON Tools Lite fino a 12.5.0.2434 daemon-tools.cc Esecuzione di codice remoto</a>
+      <p class="card-desc">Un punto di criticita di livello critico è stato rilevato in AVB Disc Soft DAEMON Tools Lite fino a 12.5.0.2434. Riguarda una funzione scono...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#45</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-18-cve-2026-44088-krajowa-izba-rozliczeniowa-szafirho.html" class="card-title">CVE-2026-44088 | Krajowa Izba Rozliczeniowa SzafirHost fino a 1.2.0 JAR File escalationi di privilegi (EUVD-2026-30512)</a>
+      <p class="card-desc">In Krajowa Izba Rozliczeniowa SzafirHost fino a 1.2.0 è stato trovato un punto critico di livello critico. Viene interessata una funzione sc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#46</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-19-cve-2026-7563-techlabpro1-classified-listing-plugi.html" class="card-title">CVE-2026-7563 | techlabpro1 Classified Listing Plugin fino a 5.3.10 su WordPress escalationi di privilegi (EUVD-2026-30519)</a>
+      <p class="card-desc">In techlabpro1 Classified Listing Plugin fino a 5.3.10 è stata rilevato un punto critico di livello critico. Si considera coinvolta una funz...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#47</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-20-cve-2026-7046-webaways-nex-forms-plugin-fino-a-9-1.html" class="card-title">CVE-2026-7046 | webaways NEX-Forms Plugin fino a 9.1.12 su WordPress table iniezione SQL (EUVD-2026-30518)</a>
+      <p class="card-desc">Un punto critico di livello critico è stato rilevato in webaways NEX-Forms Plugin fino a 9.1.12. Risulta coinvolta una funzione sconosciuta....</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#48</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-21-cve-2026-5229-m615926-receive-notifications-after-.html" class="card-title">CVE-2026-5229 | m615926 Receive Notifications After Form Submitting Plugin Cookie form_notify_line_email autenticazione debole</a>
+      <p class="card-desc">In m615926 Receive Notifications After Form Submitting Plugin fino a 1.1.10 stata rilevata una vulnerabilità di livello critico. Da questa v...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#49</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-22-cve-2026-4683-smartcatai-smartcat-translator-for-w.html" class="card-title">CVE-2026-4683 | smartcatai Smartcat Translator for WPML Plugin fino a 3.1.77 su WordPress Translation Service escalationi di privilegi (EUVD-2026-30515)</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello critico in smartcatai Smartcat Translator for WPML Plugin fino a 3.1.77. É interessato una fun...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#50</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-23-cve-2026-6403-davidfcarr-quick-playground-plugin-f.html" class="card-title">CVE-2026-6403 | davidfcarr Quick Playground Plugin fino a 1.3.3 su WordPress Path Validation qckply_zip_theme directory traversal (EUVD-2026-30517)</a>
+      <p class="card-desc">Una vulnerabilità di livello critico è stata rilevata in davidfcarr Quick Playground Plugin fino a 1.3.3. Riguarda la funzione qckply_zip_th...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#51</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-24-cve-2026-6228-shabti-frontend-admin-by-dynamiapps-.html" class="card-title">CVE-2026-6228 | shabti Frontend Admin by DynamiApps Plugin fino a 3.28.36 su WordPress Configuration wp-admin/post.php feadmin_get_user_roles role escalationi di privilegi (EUVD-2026-30513)</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come critico in shabti Frontend Admin by DynamiApps Plugin fino a 3.28.36 su WordPress. Viene...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#52</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-25-cve-2026-8654-delphix-continuous-data-ibm-db2-conn.html" class="card-title">CVE-2026-8654 | Delphix Continuous Data IBM Db2 Connector escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come critico in Delphix Continuous Data IBM Db2 Connector, MangoDB Connector, PostgreSQL Con...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#53</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-26-cve-2026-41702-vmware-fusion-fino-a-25h2u1-race-co.html" class="card-title">CVE-2026-41702 | Vmware Fusion fino a 25H2U1 race condition</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in Vmware Fusion. Risulta coinvolta una funzione sconosciuta. La manipolazione ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#54</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-27-cve-2026-4094-realmag777-fox-plugin-fino-a-1-4-5-s.html" class="card-title">CVE-2026-4094 | realmag777 FOX Plugin fino a 1.4.5 su WordPress Configuration admin_head woocs_reset escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in realmag777 FOX Plugin fino a 1.4.5 su WordPress. Da questa vulnerabi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#55</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-30-cve-2026-2652-mlflow-fino-a-3-9-x-job-api-find-fas.html" class="card-title">CVE-2026-2652 | mlflow fino a 3.9.x Job API _find_fastapi_validator autenticazione debole</a>
+      <p class="card-desc">In mlflow fino a 3.9.x è stato trovato un punto critico di livello critico. Viene interessata una funzione sconosciuta appartenente al compo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#56</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-32-cve-2026-43490-linux-kernel-fino-a-6-12-87-6-18-29.html" class="card-title">CVE-2026-43490 | Linux Kernel fino a 6.12.87/6.18.29/7.0.6/7.1-rc2 ksmbd smb_inherit_dacl buffer overflow</a>
+      <p class="card-desc">Un punto critico di livello critico è stato rilevato in Linux Kernel fino a 6.12.87/6.18.29/7.0.6/7.1-rc2. Risulta coinvolta una funzione sc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#57</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-33-cve-2026-7373-rapid7-metasploit-pro-5-0-0-metasplo.html" class="card-title">CVE-2026-7373 | Rapid7 Metasploit Pro 5.0.0 metasploitPostgreSQL Service postgres.exe escalationi di privilegi</a>
+      <p class="card-desc">In Rapid7 Metasploit Pro 5.0.0 stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato una funzione scono...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#58</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-34-cve-2025-29944-amd-ryzen-4000-mobile-processors-wi.html" class="card-title">CVE-2025-29944 | AMD Ryzen 4000 Mobile Processors with Radeon Graphics buffer overflow</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello critico in AMD Ryzen 4000 Mobile Processors with Radeon Graphics, Ryzen 7035 Processors with R...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#59</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-35-cve-2025-54517-amd-radeon-pro-v710-amdgv-cmd-get-d.html" class="card-title">CVE-2025-54517 | AMD Radeon PRO V710 AMDGV_CMD_GET_DIAG_DATA buffer overflow</a>
+      <p class="card-desc">Una vulnerabilità di livello critico è stata rilevata in AMD Instinct MI250, Instinct MI308X, Instinct MI300A, Instinct MI300X, Instinct MI3...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#60</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-36-cve-2025-48516-amd-ryzen-4000-mobile-processors-wi.html" class="card-title">CVE-2025-48516 | AMD Ryzen 4000 Mobile Processors with Radeon Graphics PMIC Interface escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come critico in AMD Ryzen 4000 Mobile Processors with Radeon Graphics, Ryzen 7035 Processors ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#61</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-37-cve-2025-66664-amd-radeon-pro-v710-soc-driver-drv-.html" class="card-title">CVE-2025-66664 | AMD Radeon PRO V710 SOC Driver DRV_SOC_CMD_ID_LOAD_GFX_IP_FW rivelazione di informazioni</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in AMD Radeon RX 6000 Graphics Products, Radeon RX 7000 Graphics Products,...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#62</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-38-cve-2025-66660-amd-radeon-pro-v710-tee-soc-driver-.html" class="card-title">CVE-2025-66660 | AMD Radeon PRO V710 TEE SOC Driver DRV_SOC_CMD_ID_SRIOV_CHECK_TA_COMPAT negazione del servizio</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in AMD Radeon RX 6000 Graphics Products, Radeon RX 7000 Graphics Products,...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#63</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-39-cve-2025-54511-amd-radeon-pro-v620-input-escalatio.html" class="card-title">CVE-2025-54511 | AMD Radeon PRO V620 input escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in AMD MI-25, Instinct MI250, Instinct MI210, Radeon PRO V520 and Radeo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#64</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-40-cve-2026-0428-amd-instinct-mi300a-fino-a-bkc-25-te.html" class="card-title">CVE-2026-0428 | AMD Instinct MI300A fino a BKC 25 TEE SOC Driver DRV_SOC_CMD_ID_SRIOV_COPY_VF_CHIPLET_REGS negazione del servizio</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in AMD Instinct MI300A, Instinct MI300X, Instinct MI308X and Instinct MI325X fin...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#65</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-42-cve-2025-29938-amd-ryzen-7035-processors-with-rade.html" class="card-title">CVE-2025-29938 | AMD Ryzen 7035 Processors with Radeon Graphics escalationi di privilegi</a>
+      <p class="card-desc">In AMD Ryzen 7035 Processors with Radeon Graphics, Ryzen 7040 Mobile Processors with Radeon Graphics, Ryzen 8040 Mobile Processors with Rade...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#66</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-44-cve-2024-36333-amd-radeon-rx-5000-graphics-product.html" class="card-title">CVE-2024-36333 | AMD Radeon RX 5000 Graphics Products AMD Cleanup Utility escalationi di privilegi</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in AMD Radeon RX 5000 Graphics Products, Radeon PRO W5000 Graphics Products, Radeo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#67</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-45-cve-2025-29937-amd-ryzen-7035-processors-with-rade.html" class="card-title">CVE-2025-29937 | AMD Ryzen 7035 Processors with Radeon Graphics Management Frame rivelazione di informazioni</a>
+      <p class="card-desc">In AMD Ryzen 7035 Processors with Radeon Graphics, Ryzen 7040 Mobile Processors with Radeon Graphics, Ryzen 8040 Mobile Processors with Rade...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#68</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-46-cve-2025-29936-amd-ryzen-7035-processors-with-rade.html" class="card-title">CVE-2025-29936 | AMD Ryzen 7035 Processors with Radeon Graphics Management Frame escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello critico in AMD Ryzen 7035 Processors with Radeon Graphics, Ryzen 7040 Mobile Processors with R...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#69</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-47-cve-2025-29935-amd-ryzen-7035-processors-with-rade.html" class="card-title">CVE-2025-29935 | AMD Ryzen 7035 Processors with Radeon Graphics Management Frame buffer overflow</a>
+      <p class="card-desc">Una vulnerabilità di livello critico è stata rilevata in AMD Ryzen 7035 Processors with Radeon Graphics, Ryzen 7040 Mobile Processors with R...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#70</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-48-cve-2024-36323-amd-radeon-rx-7000-graphics-product.html" class="card-title">CVE-2024-36323 | AMD Radeon RX 7000 Graphics Products VCN-JPEG HW Register Space escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come critico in AMD Radeon RX 7000 Graphics Products, Radeon PRO W7000 Graphics Products, Ins...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#71</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-49-cve-2026-0481-amd-instinct-mi210-configuration-neg.html" class="card-title">CVE-2026-0481 | AMD Instinct MI210 Configuration negazione del servizio</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come critico in AMD Instinct MI210, Instinct MI250, Instinct MI300A, Instinct MI300X, Instin...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#72</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-50-cve-2025-52532-amd-instinct-mi210-global-variable-.html" class="card-title">CVE-2025-52532 | AMD Instinct MI210 Global Variable amdgv_cmd race condition</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in AMD Radeon PRO V620, Radeon PRO V710, Instinct MI250, Instinct MI308X, ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#73</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-51-cve-2024-36334-amd-radeon-rx-7000-graphics-product.html" class="card-title">CVE-2024-36334 | AMD Radeon RX 7000 Graphics Products Radeon RGB Tool autenticazione debole</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in AMD Radeon RX 7000 Graphics Products. Da questa vulnerabilità è interessa...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#74</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-52-cve-2024-21950-amd-instinct-mi300x-rivelazione-di-.html" class="card-title">CVE-2024-21950 | AMD Instinct MI300X rivelazione di informazioni</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in AMD Instinct MI300X, Instinct MI300A, Instinct MI325X and Instinct MI308X. É ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#75</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-53-cve-2025-0044-amd-ryzen-al-max-rivelazione-di-info.html" class="card-title">CVE-2025-0044 | AMD Ryzen Al Max+ rivelazione di informazioni</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in AMD Ryzen Al Max+, Ryzen AI 300 Processors, Ryzen 7040 Mobile Processors w...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#76</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-54-cve-2021-26380-amd-radeon-pro-v620-buffer-overflow.html" class="card-title">CVE-2021-26380 | AMD Radeon PRO V620 buffer overflow</a>
+      <p class="card-desc">In AMD Ryzen 5000 Desktop Processors with Radeon Graphics, Ryzen Threadripper PRO 5000 WX-Series Processors, Ryzen 7030 Mobile Processors wi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#77</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-55-cve-2025-0040-amd-ryzen-7040-mobile-processors-wit.html" class="card-title">CVE-2025-0040 | AMD Ryzen 7040 Mobile Processors with Radeon Graphics Advanced Extensible Interface escalationi di privilegi</a>
+      <p class="card-desc">In AMD Ryzen 7040 Mobile Processors with Radeon Graphics, Ryzen 8000 Desktop Processors, Ryzen 8040 Mobile Processors with Radeon Graphics a...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#78</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-56-cve-2025-0028-amd-ryzen-7035-processors-with-radeo.html" class="card-title">CVE-2025-0028 | AMD Ryzen 7035 Processors with Radeon Graphics Management Frame escalationi di privilegi</a>
+      <p class="card-desc">Un punto critico di livello critico è stato rilevato in AMD Ryzen 7035 Processors with Radeon Graphics, Ryzen 7040 Mobile Processors with Ra...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#79</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-57-cve-2024-36332-amd-radeon-pro-v710-negazione-del-s.html" class="card-title">CVE-2024-36332 | AMD Radeon PRO V710 negazione del servizio</a>
+      <p class="card-desc">In AMD Radeon PRO V710 stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato una funzione sconosciuta. ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#80</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-58-cve-2023-31309-amd-radeon-pro-v620-power-managemen.html" class="card-title">CVE-2023-31309 | AMD Radeon PRO V620 Power Management Firmware buffer overflow</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in AMD Radeon RX 6000 Graphics Products, Radeon PRO W6000 Graphics Products, Rade...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#81</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-59-cve-2022-23826-amd-radeon-pro-v620-graphics-interf.html" class="card-title">CVE-2022-23826 | AMD Radeon PRO V620 Graphics Interface race condition</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in AMD Ryzen 3000 Mobile Processors with Radeon Graphics, Athlon 3000 Mobile Proc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#82</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-62-cve-2023-31317-amd-instinct-mi210-buffer-overflow.html" class="card-title">CVE-2023-31317 | AMD Instinct MI210 buffer overflow</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in AMD Radeon RX 6000 Graphics Products, Radeon RX 7000 Graphics Products, Rade...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#83</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-64-cve-2026-0432-amd-ryzen-4000-mobile-processors-wit.html" class="card-title">CVE-2026-0432 | AMD Ryzen 4000 Mobile Processors with Radeon Graphics AMD Chipset Driver escalationi di privilegi (EUVD-2026-30497)</a>
+      <p class="card-desc">Un punto di debole di livello critico è stato rilevato in AMD Ryzen 4000 Mobile Processors with Radeon Graphics, Ryzen 7035 Processors with ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#84</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-65-cve-2026-8612-oalders-www-mechanize-cached-fino-a-.html" class="card-title">CVE-2026-8612 | OALDERS WWW::Mechanize::Cached fino a 1.x su Perl HTTP Response /tmp/FileCache get escalationi di privilegi</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in OALDERS WWW::Mechanize::Cached fino a 1.x. Riguarda la funzione get del fi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#85</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-66-cve-2025-52540-amd-ryzen-7035-processors-with-rade.html" class="card-title">CVE-2025-52540 | AMD Ryzen 7035 Processors with Radeon Graphics Management Frame buffer overflow (EUVD-2025-209864)</a>
+      <p class="card-desc">In AMD Ryzen 7035 Processors with Radeon Graphics, Ryzen 7040 Mobile Processors with Radeon Graphics, Ryzen 8040 Mobile Processors with Rade...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#86</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-67-cve-2025-48521-amd-ryzen-4000-mobile-processors-wi.html" class="card-title">CVE-2025-48521 | AMD Ryzen 4000 Mobile Processors with Radeon Graphics buffer overflow (EUVD-2025-209863)</a>
+      <p class="card-desc">In AMD Ryzen 4000 Mobile Processors with Radeon Graphics, Ryzen 7035 Processors with Radeon Graphics, Athlon 3000 Mobile Processors with Rad...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#87</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-68-cve-2025-48519-amd-ryzen-7035-processors-with-rade.html" class="card-title">CVE-2025-48519 | AMD Ryzen 7035 Processors with Radeon Graphics Management Frame buffer overflow (EUVD-2025-209866)</a>
+      <p class="card-desc">Un punto critico di livello critico è stato rilevato in AMD Ryzen 7035 Processors with Radeon Graphics, Ryzen 7040 Mobile Processors with Ra...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#88</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-69-cve-2025-0045-amd-athlon-3000-mobile-processors-wi.html" class="card-title">CVE-2025-0045 | AMD Athlon 3000 Mobile Processors with Radeon Graphics buffer overflow (EUVD-2025-209862)</a>
+      <p class="card-desc">In AMD Athlon 3000 Mobile Processors with Radeon Graphics, Ryzen 4000 Mobile Processors with Radeon Graphics, Ryzen 6000 Processors with Rad...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#89</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-70-cve-2025-48520-amd-ryzen-7035-processors-with-rade.html" class="card-title">CVE-2025-48520 | AMD Ryzen 7035 Processors with Radeon Graphics prima 7.06.02.123 Management Frame rivelazione di informazioni (EUVD-2025-209865)</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in AMD Ryzen 7035 Processors with Radeon Graphics, Ryzen 7040 Mobile Processors w...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#90</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-72-cve-2026-45371-siyuan-fino-a-3-6-x-api-graph-getgr.html" class="card-title">CVE-2026-45371 | SiYuan fino a 3.6.x /api/graph/getGraph model.Conf.Save escalationi di privilegi (GHSA-gmmv-4cc5-wr9r)</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come critico in SiYuan fino a 3.6.x. Viene interessata una funzione sconosciuta appartenente ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#91</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-74-cve-2024-36345-amd-epyc-4004-system-management-mod.html" class="card-title">CVE-2024-36345 | AMD EPYC 4004 System Management Mode rivelazione di informazioni</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in AMD EPYC 4004, EPYC 4005, Ryzen 6000 Processors with Radeon Graphics, R...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#92</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-75-cve-2026-8621-openclaw-crabbox-fino-a-0-11-x-auten.html" class="card-title">CVE-2026-8621 | openclaw crabbox fino a 0.11.x autenticazione debole</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in openclaw crabbox fino a 0.11.x. Da questa vulnerabilità è interessato una...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#93</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-76-cve-2026-45148-siyuan-fino-a-3-6-x-publish-service.html" class="card-title">CVE-2026-45148 | SiYuan fino a 3.6.x Publish Service escalationi di privilegi (GHSA-fmh9-gpqh-g53g)</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in SiYuan fino a 3.6.x. É interessato una funzione sconosciuta del componente Pu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#94</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-77-cve-2026-44592-wavelens-gradient-1-1-0-nixos-proto.html" class="card-title">CVE-2026-44592 | wavelens gradient 1.1.0 NixOS /proto autenticazione debole (GHSA-49w6-gf3p-96m2)</a>
+      <p class="card-desc">Un punto di criticita di livello critico è stato rilevato in wavelens gradient 1.1.0. Riguarda una funzione sconosciuta del file /proto del ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#95</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-78-cve-2025-48512-amd-ryzen-4000-mobile-processors-wi.html" class="card-title">CVE-2025-48512 | AMD Ryzen 4000 Mobile Processors with Radeon Graphics prima 7.04.09.545 Installation Directory escalationi di privilegi (EUVD-2025-209861)</a>
+      <p class="card-desc">In AMD Ryzen 4000 Mobile Processors with Radeon Graphics, Ryzen 7035 Processors with Radeon Graphics, Athlon 3000 Mobile Processors with Rad...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#96</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-79-cve-2026-45147-siyuan-fino-a-3-6-x-api-tag-gettag-.html" class="card-title">CVE-2026-45147 | SiYuan fino a 3.6.x /api/tag/getTag model.Conf.Save sort escalationi di privilegi (GHSA-6r88-8v7q-q4p2)</a>
+      <p class="card-desc">In SiYuan fino a 3.6.x è stata rilevato un punto critico di livello critico. Si considera coinvolta una funzione sconosciuta nel file /api/t...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#97</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-81-cve-2026-8555-google-chrome-fino-a-148-0-7778-96-s.html" class="card-title">CVE-2026-8555 | Google Chrome fino a 148.0.7778.96 su Windows GTK buffer overflow (ID 500033)</a>
+      <p class="card-desc">In Google Chrome stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato una funzione sconosciuta del com...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#98</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-82-cve-2026-8586-google-chrome-fino-a-148-0-7778-96-c.html" class="card-title">CVE-2026-8586 | Google Chrome fino a 148.0.7778.96 Chromoting escalationi di privilegi (ID 499154 / Nessus ID 314871)</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello critico in Google Chrome. É interessato una funzione sconosciuta del componente Chromoting. La...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#99</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-83-cve-2026-8597-amazon-sagemaker-python-sdk-fino-a-2.html" class="card-title">CVE-2026-8597 | Amazon SageMaker Python SDK fino a 2.257.1/3.7.1 Pickle escalationi di privilegi (GHSA-rq6v-x3j8-7qgf)</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in Amazon SageMaker Python SDK fino a 2.257.1/3.7.1. Riguarda una funzione sconos...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#100</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-84-cve-2026-8596-aws-amazon-sagemaker-python-sdk-fino.html" class="card-title">CVE-2026-8596 | AWS Amazon SageMaker Python SDK fino a 2.257.1/3.7.1 Serve cifratura debole (GHSA-7hh5-prp2-mfh5)</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in AWS Amazon SageMaker Python SDK fino a 2.257.1/3.7.1. Viene interessata ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#101</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-85-cve-2026-8587-google-chrome-fino-a-148-0-7778-96-s.html" class="card-title">CVE-2026-8587 | Google Chrome fino a 148.0.7778.96 su macOS Extensions buffer overflow (ID 507356)</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come critico in Google Chrome su macOS. Si considera coinvolta una funzione sconosciuta nel ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#102</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-86-cve-2026-8565-google-chrome-fino-a-148-0-7778-96-s.html" class="card-title">CVE-2026-8565 | Google Chrome fino a 148.0.7778.96 su macOS Downloads escalationi di privilegi (ID 442860)</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Google Chrome su macOS. Risulta coinvolta una funzione sconosciuta del ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#103</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-87-cve-2026-44633-livehelperchat-fino-a-4-84-u-endpoi.html" class="card-title">CVE-2026-44633 | livehelperchat fino a 4.84.u Endpoint operation_admin escalationi di privilegi (GHSA-hjqq-qmvj-9whm)</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in livehelperchat fino a 4.84.u. Da questa vulnerabilità è interessato la fu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#104</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-88-cve-2026-8585-google-chrome-fino-a-148-0-7778-96-m.html" class="card-title">CVE-2026-8585 | Google Chrome fino a 148.0.7778.96 Media rivelazione di informazioni (ID 499052)</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in Google Chrome. É interessato una funzione sconosciuta del componente Media. L...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#105</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-89-cve-2026-8584-google-chrome-fino-a-148-0-7778-96-v.html" class="card-title">CVE-2026-8584 | Google Chrome fino a 148.0.7778.96 Views escalationi di privilegi (ID 498892)</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Google Chrome. Riguarda una funzione sconosciuta del componente Visualizza...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#106</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-90-cve-2026-8582-google-chrome-fino-a-148-0-7778-96-d.html" class="card-title">CVE-2026-8582 | Google Chrome fino a 148.0.7778.96 Dawn rivelazione di informazioni (ID 497594)</a>
+      <p class="card-desc">In Google Chrome è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciuta appartenente al compon...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#107</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-91-cve-2026-8581-google-chrome-fino-a-148-0-7778-96-g.html" class="card-title">CVE-2026-8581 | Google Chrome fino a 148.0.7778.96 GPU buffer overflow (ID 497292 / Nessus ID 314895)</a>
+      <p class="card-desc">In Google Chrome è stata rilevato un punto critico di livello critico. Si considera coinvolta una funzione sconosciuta nel componente GPU. A...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#108</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-92-cve-2026-8580-google-chrome-fino-a-148-0-7778-96-m.html" class="card-title">CVE-2026-8580 | Google Chrome fino a 148.0.7778.96 Mojo buffer overflow (ID 496639)</a>
+      <p class="card-desc">Un punto critico di livello critico è stato rilevato in Google Chrome. Risulta coinvolta una funzione sconosciuta del componente Mojo. Per c...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#109</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-93-cve-2026-8579-google-chrome-fino-a-148-0-7778-96-s.html" class="card-title">CVE-2026-8579 | Google Chrome fino a 148.0.7778.96 Skia rivelazione di informazioni (ID 496526 / Nessus ID 314892)</a>
+      <p class="card-desc">In Google Chrome stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato una funzione sconosciuta del com...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#110</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-94-cve-2026-8577-google-chrome-fino-a-148-0-7778-96-f.html" class="card-title">CVE-2026-8577 | Google Chrome fino a 148.0.7778.96 Fonts buffer overflow (ID 496302)</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello critico in Google Chrome. É interessato una funzione sconosciuta del componente Fonts. Attrave...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#111</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-95-cve-2026-8575-google-chrome-fino-a-148-0-7778-96-u.html" class="card-title">CVE-2026-8575 | Google Chrome fino a 148.0.7778.96 UI buffer overflow (ID 496217)</a>
+      <p class="card-desc">Una vulnerabilità di livello critico è stata rilevata in Google Chrome. Riguarda una funzione sconosciuta del componente UI. La manipolazion...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#112</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-96-cve-2026-8574-google-chrome-fino-a-148-0-7778-96-s.html" class="card-title">CVE-2026-8574 | Google Chrome fino a 148.0.7778.96 su Windows Core buffer overflow (ID 495902)</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come critico in Google Chrome su Windows. Viene interessata una funzione sconosciuta apparten...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#113</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-97-cve-2026-8573-google-chrome-fino-a-148-0-7778-96-s.html" class="card-title">CVE-2026-8573 | Google Chrome fino a 148.0.7778.96 su Windows Codecs buffer overflow (ID 495417)</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Google Chrome su Windows. Si considera coinvolta una funzione sconosciu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#114</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-98-cve-2026-8570-google-chrome-fino-a-148-0-7778-96-v.html" class="card-title">CVE-2026-8570 | Google Chrome fino a 148.0.7778.96 V8 escalationi di privilegi (ID 490353)</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Google Chrome. Risulta coinvolta una funzione sconosciuta del component...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#115</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-99-cve-2026-8569-google-chrome-fino-a-148-0-7778-96-s.html" class="card-title">CVE-2026-8569 | Google Chrome fino a 148.0.7778.96 su macOS Codecs buffer overflow (ID 490229 / Nessus ID 314886)</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in Google Chrome su macOS. Da questa vulnerabilità è interessato una funzion...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#116</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-100-cve-2026-8567-google-chrome-fino-a-148-0-7778-96-s.html" class="card-title">CVE-2026-8567 | Google Chrome fino a 148.0.7778.96 su Windows ANGLE buffer overflow (ID 484986 / Nessus ID 314878)</a>
+      <p class="card-desc">Un punto di debole di livello critico è stato rilevato in Google Chrome. É interessato una funzione sconosciuta del componente ANGLE. Per ca...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#117</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-101-what-45-days-of-watching-your-own-tools-will-tell-.html" class="card-title">What 45 Days of Watching Your Own Tools Will Tell You About Your Real Attack Surface</a>
+      <p class="card-desc">In Your Biggest Security Risk Isn&#39;t Malware — It&#39;s What You Already Trust, we made a simple argument: the most dangerous activity inside mos...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#118</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-102-tanstack-supply-chain-attack-hits-two-openai-emplo.html" class="card-title">TanStack Supply Chain Attack Hits Two OpenAI Employee Devices, Forces macOS Updates</a>
+      <p class="card-desc">OpenAI has disclosed that two of its employee devices in its corporate environment were impacted via the Mini Shai-Hulud supply chain attack...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#119</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-106-stealer-backdoor-found-in-3-node-ipc-versions-targ.html" class="card-title">Stealer Backdoor Found in 3 Node-IPC Versions Targeting Developer Secrets</a>
+      <p class="card-desc">Cybersecurity researchers are sounding the alarm about what has been described as &quot;malicious activity&quot; in newly published versions of node-i...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#120</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-107-threatsday-bulletin-pan-os-rce-mythos-curl-bug-ai-.html" class="card-title">ThreatsDay Bulletin: PAN-OS RCE, Mythos cURL Bug, AI Tokenizer Attacks, and 10+ Stories</a>
+      <p class="card-desc">Everything is still on fire. This week feels dumb in the worst way — bad links, weak checks, fake help desks, shady forum posts, and people ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#121</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-108-microsoft-to-automatically-roll-back-faulty-window.html" class="card-title">Microsoft to automatically roll back faulty Windows drivers</a>
+      <p class="card-desc">Microsoft is introducing a new capability that will allow it to remotely roll back problematic Windows drivers delivered through Windows Upd...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#122</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-110-teampcp-hackers-advertise-mistral-ai-code-repos-fo.html" class="card-title">TeamPCP hackers advertise Mistral AI code repos for sale</a>
+      <p class="card-desc">The TeamPCP hacker group is threatening to leak source code from the Mistral AI project unless a buyer is found for the data. [...]</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#123</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-113-openai-confirms-security-breach-in-tanstack-supply.html" class="card-title">OpenAI confirms security breach in TanStack supply chain attack</a>
+      <p class="card-desc">OpenAI says two employees&#39; devices were breached in the recent TanStack supply chain attack that impacted hundreds of npm and PyPI packages,...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#124</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-114-windows-11-and-microsoft-edge-hacked-at-pwn2own-be.html" class="card-title">Windows 11 and Microsoft Edge hacked at Pwn2Own Berlin 2026</a>
+      <p class="card-desc">On the first day of Pwn2Own Berlin 2026, security researchers collected $523,000 in cash awards after exploiting 24 unique zero-days. [...]</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#125</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-116-cyber-enabled-cargo-crime-how-cybercrime-tradecraf.html" class="card-title">Cyber-Enabled Cargo Crime: How Cybercrime Tradecraft is Used to Steal Freight</a>
+      <p class="card-desc">Cargo theft now starts with phishing emails and stolen credentials, not hijackings, to reroute and steal freight from supply chains. NMFTA o...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#126</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-117-cyber-pioneers-ponder-past-as-prologue.html" class="card-title">Cyber Pioneers Ponder Past as Prologue</a>
+      <p class="card-desc">Robert &amp;quot;RSnake&amp;quot; Hansen, Katie Moussouris, Rich Mogull, Richard Stiennon, and Bruce Schneier reflect on how their favorite columns ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#127</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-118-taiwan-incident-highlights-cybersecurity-gaps-in-r.html" class="card-title">Taiwan Incident Highlights Cybersecurity Gaps in Rail Systems</a>
+      <p class="card-desc">A Taiwanese student experimenting with software-defined radio technology shut down three bullet trains for nearly an hour, leading to an ant...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#128</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-119-securityscorecard-snags-driftnet-to-level-up-threa.html" class="card-title">SecurityScorecard Snags Driftnet to Level Up Threat Intelligence</a>
+      <p class="card-desc">The acquisition looks to boost visibility into third-party ecosystems, which are becoming a bigger concern as vectors for supply chain attac...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#129</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-121-frostyneighbor-apt-carefully-targets-govt-orgs-in-.html" class="card-title">&#39;FrostyNeighbor&#39; APT Carefully Targets Govt Orgs in Poland, Ukraine</a>
+      <p class="card-desc">Attackers uniquely fingerprint victims before delivering spear-phishing payloads aimed at espionage, in the latest campaign from the Belarus...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#130</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-123-hackers-use-orbit-rootkit-to-harvest-ssh-and-sudo-.html" class="card-title">Hackers Use OrBit Rootkit to Harvest SSH and Sudo Credentials From Linux Systems</a>
+      <p class="card-desc">A dangerous rootkit called OrBit has been quietly targeting Linux systems for years, stealing login credentials and hiding deep inside infec...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#131</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-124-microsoft-warns-of-attackers-using-trusted-hpe-ope.html" class="card-title">Microsoft Warns of Attackers Using Trusted HPE Operations Agent for Malware-Free Intrusions</a>
+      <p class="card-desc">A recent intrusion uncovered by security researchers revealed a calculated attack campaign that used a legitimate enterprise management tool...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#132</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-125-tycoon-2fa-operators-adopt-oauth-device-code-phish.html" class="card-title">Tycoon 2FA Operators Adopt OAuth Device Code Phishing to Bypass MFA</a>
+      <p class="card-desc">Cybercriminals behind the Tycoon 2FA phishing kit have added a powerful new weapon to their playbook. By combining their well-known phishing...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#133</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-128-multiple-cpanel-vulnerabilities-allows-access-to-s.html" class="card-title">Multiple cPanel Vulnerabilities Allows Access to Sensitive System Resources</a>
+      <p class="card-desc">In a severe blow to web hosting environments worldwide, administrators are racing against the clock to patch a massive wave of security vuln...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#134</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-129-teampcp-hackers-abuse-ci-cd-pipelines-to-steal-dev.html" class="card-title">TeamPCP Hackers Abuse CI/CD Pipelines to Steal Developer and Cloud Credentials</a>
+      <p class="card-desc">TeamPCP is quietly turning trusted development tools into entry points for large scale credential theft. By slipping malicious code into pop...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#135</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-133-american-lending-center-data-breach-affects-123-00.html" class="card-title">American Lending Center Data Breach Affects 123,000 Individuals</a>
+      <p class="card-desc">The non-bank lender discovered a ransomware attack nearly one year ago, but only recently completed its investigation. The post American Len...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#136</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-134-openai-hit-by-tanstack-supply-chain-attack.html" class="card-title">OpenAI Hit by TanStack Supply Chain Attack</a>
+      <p class="card-desc">Two employee devices were compromised in the attack, and credential material was stolen from OpenAI code repositories. The post OpenAI Hit b...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#137</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-135-teampcp-ups-the-game-releases-shai-hulud-worm-s-so.html" class="card-title">TeamPCP Ups the Game, Releases Shai-Hulud Worm’s Source Code</a>
+      <p class="card-desc">The hacking group is encouraging miscreants to use the code in supply chain attacks, promising monetary rewards. The post TeamPCP Ups the Ga...</p>
+    </div>
+</div>
+
+<div class="no-results" id="no-results">
+  <p>Nessun risultato trovato</p>
+</div>
+
+<footer class="footer">
+  <p>Cyber Security News Dashboard - Generato automaticamente senza amore o sentimento</p>
+  <p>Creato (con n8n e un pochino di javascript scritto da un LLM) da: <a href="https://www.linkedin.com/in/mocciaalessandro" target="_blank">Alessandro</a></p>
+</footer>
+
+<script>
+(function() {
+  const cards = document.querySelectorAll('.card');
+  const buttons = document.querySelectorAll('[data-filter]');
+  const searchInput = document.getElementById('search');
+  const noResults = document.getElementById('no-results');
+  
+  let currentFilter = 'all';
+  let searchTerm = '';
+
+  const filterCards = () => {
+    let visibleCount = 0;
+    
+    cards.forEach(card => {
+      const matchesFilter = currentFilter === 'all' || card.dataset.severity === currentFilter;
+      const matchesSearch = !searchTerm || card.textContent.toLowerCase().includes(searchTerm);
+      const isVisible = matchesFilter && matchesSearch;
+      
+      card.style.display = isVisible ? 'block' : 'none';
+      if (isVisible) visibleCount++;
+    });
+    
+    noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+  };
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      filterCards();
+    });
+  });
+
+  let debounceTimer;
+  searchInput.addEventListener('input', (e) => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      searchTerm = e.target.value.toLowerCase();
+      filterCards();
+    }, 150);
+  });
+})();
+</script>
+
+</body>
+</html>
