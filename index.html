@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyber Security News Dashboard</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --primary: #00ff9f;
+      --primary-dim: #00cc7a;
+      --card-bg: #111;
+      --border: rgba(0, 255, 159, 0.2);
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--primary);
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.5;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      font-size: clamp(1.2rem, 4vw, 2rem);
+      text-shadow: 0 0 20px var(--primary);
+      margin: 0 0 10px 0;
+    }
+    .header time {
+      font-size: 0.85rem;
+      opacity: 0.7;
+    }
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 25px;
+    }
+    .stat {
+      padding: 8px 15px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      background: var(--card-bg);
+    }
+    .stat.critical { border-color: #ff4444; }
+    .stat.high { border-color: #ff8c00; }
+    .stat.medium { border-color: #ffd700; }
+    .stat.low { border-color: var(--primary-dim); }
+    .controls {
+      max-width: 900px;
+      margin: 0 auto 25px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .search-wrapper {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+    .search-wrapper::before {
+      content: '🔍';
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+    }
+    input {
+      width: 100%;
+      padding: 10px 10px 10px 35px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--primary);
+      font-family: inherit;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .filter-buttons {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 10px 15px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--primary);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    button:hover, button.active {
+      background: var(--primary);
+      color: var(--bg);
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      display: grid;
+      gap: 15px;
+    }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 15px;
+      background: var(--card-bg);
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .index {
+      font-size: 12px;
+      opacity: 0.6;
+    }
+    .badge {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    .critical { background: #ff4444; color: #fff; }
+    .high { background: #ff8c00; color: #000; }
+    .medium { background: #ffd700; color: #000; }
+    .low { background: var(--primary-dim); color: #000; }
+    .card-title {
+      display: block;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: bold;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .card-title:hover { text-decoration: underline; }
+    .card-desc {
+      font-size: 12px;
+      color: var(--primary-dim);
+      margin: 0;
+    }
+    .no-results {
+      text-align: center;
+      padding: 40px;
+      opacity: 0.6;
+      display: none;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      opacity: 0.6;
+      text-align: center;
+    }
+    @media (max-width: 600px) {
+      .controls { flex-direction: column; }
+      .filter-buttons { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🛡️ CYBER SECURITY NEWS DASHBOARD</h1>
+  <time datetime="2026-07-15T06:03:26.338Z">15/07/2026, 06:03</time>
+</div>
+
+<div class="stats">
+  <div class="stat">📊 Totale: <strong>153</strong></div>
+  <div class="stat critical">🔴 Critical: <strong>16</strong></div>
+  <div class="stat high">🟠 High: <strong>2</strong></div>
+  <div class="stat medium">🟡 Medium: <strong>0</strong></div>
+  <div class="stat low">🟢 Low: <strong>135</strong></div>
+</div>
+
+<div class="controls">
+  <div class="search-wrapper">
+    <input type="search" id="search" placeholder="Cerca nelle notizie..." aria-label="Cerca">
+  </div>
+  <div class="filter-buttons">
+    <button class="active" data-filter="all">Tutte</button>
+    <button data-filter="critical">Critical</button>
+    <button data-filter="high">High</button>
+    <button data-filter="medium">Medium</button>
+    <button data-filter="low">Low</button>
+  </div>
+</div>
+
+<div class="container" id="cards">
+  
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#01</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-102-sap-patches-cvss-9-9-netweaver-abap-flaw-that-coul.html" class="card-title">SAP Patches CVSS 9.9 NetWeaver ABAP Flaw That Could Expose or Modify Data</a>
+      <p class="card-desc">SAP has rolled out updates to address multiple vulnerabilities as part of its July 2026 security updates, including a critical flaw in SAP N...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#02</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-114-sonicwall-warns-of-sma1000-flaws-exploited-in-zero.html" class="card-title">SonicWall warns of SMA1000 flaws exploited in zero-day attacks, patch now</a>
+      <p class="card-desc">SonicWall warns that threat actors have been exploiting two SMA1000 vulnerabilities, tracked as CVE-2026-15409 and CVE-2026-15410, in zero-d...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#03</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-118-microsoft-july-2026-patch-tuesday-fixes-massive-57.html" class="card-title">Microsoft July 2026 Patch Tuesday fixes massive 570 flaws, 3 zero-days</a>
+      <p class="card-desc">Today is Microsoft&#39;s July 2026 Patch Tuesday, and with it comes security updates for a record-breaking 570 flaws, including two zero-day vul...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#04</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-120-progress-confirms-sharefile-zero-day-flaw-behind-s.html" class="card-title">Progress confirms ShareFile zero-day flaw behind Storage Zone shutdown</a>
+      <p class="card-desc">Progress Software has confirmed that a high-severity zero-day vulnerability is behind the emergency shutdown of ShareFile Storage Zone Contr...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#05</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-122-you-don-t-have-to-run-an-exploit-to-know-if-you-re.html" class="card-title">You Don&#39;t Have to Run an Exploit to Know If You&#39;re Vulnerable</a>
+      <p class="card-desc">Many vulnerabilities cannot be safely validated with live exploits, either because no exploit exists or the affected systems are too critica...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#06</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-125-sap-warns-of-critical-flaws-in-netweaver-and-comme.html" class="card-title">SAP warns of critical flaws in NetWeaver and Commerce Cloud</a>
+      <p class="card-desc">SAP has addressed 16 vulnerabilities across multiple products as part of its July 2026 security updates, including three critical flaws in N...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#07</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-128-records-are-made-to-be-broken-patch-tuesday-raises.html" class="card-title">Records Are Made to Be Broken: Patch Tuesday Raises Triage Stakes</a>
+      <p class="card-desc">Three of the 622 CVEs for which Microsoft issued patches this week are zero-days; there are more than 60 critical vulnerabilities.</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#08</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-135-microsoft-active-directory-services-0-day-vulnerab.html" class="card-title">Microsoft Active Directory Services 0-Day Vulnerability Actively Exploited in the Wild</a>
+      <p class="card-desc">Microsoft has released security updates for CVE-2026-56155, an actively exploited elevation-of-privilege vulnerability in Active Directory F...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#09</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-136-multiple-notepad-vulnerabilities-enable-powershell.html" class="card-title">Multiple Notepad++ Vulnerabilities Enable PowerShell Command Injection Attacks</a>
+      <p class="card-desc">Notepad++ v8.9.7 has been released with critical security fixes addressing multiple vulnerabilities, including a high-risk PowerShell comman...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#10</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-138-tego-ai-finds-claude-tag-slack-integration-can-tri.html" class="card-title">Tego AI Finds Claude Tag Slack Integration Can Trigger Unauthorized Enterprise Actions</a>
+      <p class="card-desc">Tel Aviv, Israel, July 14th, 2026, CyberNewswire Cybersecurity start-up Tego AI reveals that the new Anthropic’s native slack integration, C...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#11</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-140-fortinet-patches-seven-vulnerabilities-across-fort.html" class="card-title">Fortinet Patches Seven Vulnerabilities Across FortiOS, FortiProxy, FortiPAM, and FortiSandbox</a>
+      <p class="card-desc">Fortinet disclosed seven new security advisories on July 14, 2026, affecting FortiOS, FortiProxy, FortiPAM, and FortiSandbox. The flaws rang...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#12</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-144-sonicwall-issues-urgent-sma-patch-warning-for-two-.html" class="card-title">SonicWall Issues Urgent SMA Patch Warning for Two Zero-Day Exploits</a>
+      <p class="card-desc">SonicWall SMA1000 zero-day vulnerabilities CVE-2026-15409 and CVE-2026-15410 can be exploited for remote code execution. The post SonicWall ...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#13</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-147-adobe-patches-critical-coldfusion-vulnerabilities.html" class="card-title">Adobe Patches Critical ColdFusion Vulnerabilities</a>
+      <p class="card-desc">The ColdFusion security defects could allow attackers to execute arbitrary code or elevate their privileges. The post Adobe Patches Critical...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#14</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-148-7-severe-vulnerabilities-patched-in-vmware-avi-loa.html" class="card-title">7 Severe Vulnerabilities Patched in VMware Avi Load Balancer</a>
+      <p class="card-desc">The flaws can be exploited for authentication bypass, remote code execution, privilege escalation, and directory traversal. The post 7 Sever...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#15</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-150-sap-patches-critical-vulnerabilities-in-netweaver-.html" class="card-title">SAP Patches Critical Vulnerabilities in NetWeaver, Approuter, Commerce Cloud</a>
+      <p class="card-desc">The flaws could allow attackers to access and modify data, and cause system unavailability and request-response desynchronization. The post ...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#16</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-151-us-allies-warn-of-russian-cyberattacks-targeting-c.html" class="card-title">US, Allies Warn of Russian Cyberattacks Targeting Critical Infrastructure Routers</a>
+      <p class="card-desc">Multiple state-sponsored APTs are compromising poorly secured devices across critical infrastructure sector networks. The post US, Allies Wa...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#17</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-101-microsoft-patches-record-622-flaws-including-two-z.html" class="card-title">Microsoft Patches Record 622 Flaws, Including Two Zero-Days Under Active Attack</a>
+      <p class="card-desc">Microsoft shipped its largest Patch Tuesday on record today, and two of the fixes close holes that attackers are already exploiting. The rel...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#18</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-143-fortisandbox-vulnerability-allows-attackers-to-acc.html" class="card-title">FortiSandbox Vulnerability Allows Attackers to Access VNC Servers of VMs</a>
+      <p class="card-desc">Fortinet has disclosed a high-severity vulnerability in FortiSandbox that could allow unauthenticated attackers to access the VNC servers of...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#19</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-1-cve-2026-50448-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50448 | Microsoft Windows fino a Server 2025 NTFS buffer overflow</a>
+      <p class="card-desc">Un punto critico di livello estremamente critico è stato rilevato in Microsoft Windows. Risulta coinvolta una funzione sconosciuta del compo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#20</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-2-cve-2026-50441-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50441 | Microsoft Windows fino a Server 2025 ReFS negazione del servizio</a>
+      <p class="card-desc">In Microsoft Windows stata rilevata una vulnerabilità di livello estremamente critico. Da questa vulnerabilità è interessato una funzione sc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#21</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-3-cve-2026-50435-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50435 | Microsoft Windows fino a Server 2025 Overlay Filter rivelazione di informazioni</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in Microsoft Windows. É interessato una funzione sconosciuta del componente Overl...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#22</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-4-cve-2026-50433-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50433 | Microsoft Windows fino a Server 2025 Media buffer overflow</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in Microsoft Windows. Riguarda una funzione sconosciuta del componente Media. Att...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#23</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-5-cve-2026-50427-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50427 | Microsoft Windows fino a Server 2025 Content Delivery Manager buffer overflow</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Microsoft Windows fino a Server 2025. Viene interessata una funzione sco...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#24</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-6-cve-2026-50425-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50425 | Microsoft Windows fino a Server 2025 User Profile buffer overflow</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Microsoft Windows fino a Server 2025. Si considera coinvolta una funzio...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#25</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-7-cve-2026-50422-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50422 | Microsoft Windows fino a Server 2025 NTFS rivelazione di informazioni</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Microsoft Windows. Risulta coinvolta una funzione sconosciuta del compo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#26</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-8-cve-2026-50418-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50418 | Microsoft Windows fino a Server 2025 escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in Microsoft Windows 11 24H2/11 25H2/11 26H1/Server 2022/Server 2025. D...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#27</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-9-cve-2026-50417-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50417 | Microsoft Windows fino a Server 2025 NTFS buffer overflow</a>
+      <p class="card-desc">Un punto di debole di livello estremamente critico è stato rilevato in Microsoft Windows. É interessato una funzione sconosciuta del compone...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#28</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-10-cve-2026-50672-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50672 | Microsoft Windows fino a Server 2025 NTFS buffer overflow</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Microsoft Windows fino a Server 2025. Riguarda una funzione sconosciuta de...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#29</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-11-cve-2026-50668-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50668 | Microsoft Windows fino a Server 2025 NTFS buffer overflow</a>
+      <p class="card-desc">In Microsoft Windows è stato trovato un punto critico di livello estremamente critico. Viene interessata una funzione sconosciuta appartenen...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#30</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-12-cve-2026-50661-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50661 | Microsoft Windows fino a Server 2025 BitLocker escalationi di privilegi</a>
+      <p class="card-desc">In Microsoft Windows è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzione sconosciuta nel componen...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#31</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-13-cve-2026-50655-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50655 | Microsoft Windows fino a Server 2025 Media buffer overflow</a>
+      <p class="card-desc">Un punto critico di livello estremamente critico è stato rilevato in Microsoft Windows. Risulta coinvolta una funzione sconosciuta del compo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#32</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-14-cve-2026-50509-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50509 | Microsoft Windows fino a Server 2025 Wireless Wide Area Network Service escalationi di privilegi</a>
+      <p class="card-desc">In Microsoft Windows fino a Server 2025 stata rilevata una vulnerabilità di livello problematico. Da questa vulnerabilità è interessato una ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#33</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-15-cve-2026-50501-microsoft-windows-11-24h2-11-25h2-1.html" class="card-title">CVE-2026-50501 | Microsoft Windows 11 24H2/11 25H2/11 26H1/Server 2025 Resilient File System buffer overflow</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello estremamente critico in Microsoft Windows 11 24H2/11 25H2/11 26H1/Server 2025. É interessato u...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#34</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-16-cve-2026-50499-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50499 | Microsoft Windows fino a Server 2025 Print Spooler buffer overflow</a>
+      <p class="card-desc">Una vulnerabilità di livello estremamente critico è stata rilevata in Microsoft Windows fino a Server 2025. Riguarda una funzione sconosciut...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#35</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-17-cve-2026-50493-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50493 | Microsoft Windows fino a Server 2025 Graphics Kernel buffer overflow</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come estremamente critico in Microsoft Windows fino a Server 2025. Viene interessata una funz...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#36</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-18-cve-2026-50484-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50484 | Microsoft Windows fino a Server 2025 Kernel buffer overflow</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come estremamente critico in Microsoft Windows fino a Server 2025. Si considera coinvolta un...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#37</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-19-cve-2026-50480-microsoft-windows-10-1607-server-20.html" class="card-title">CVE-2026-50480 | Microsoft Windows 10 1607/Server 2012/Server 2012 R2/Server 2016 WPAD buffer overflow</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come estremamente critico in Microsoft Windows 10 1607/Server 2012/Server 2012 R2/Server 201...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#38</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-20-cve-2026-50478-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50478 | Microsoft Windows fino a Server 2025 Kernel buffer overflow</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in Microsoft Windows fino a Server 2025. Da questa vulnerabilità è inte...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#39</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-21-cve-2026-50477-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50477 | Microsoft Windows fino a Server 2025 Kernel buffer overflow</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in Microsoft Windows. É interessato una funzione sconosciuta del componente Kern...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#40</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-22-cve-2026-50473-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50473 | Microsoft Windows fino a Server 2025 File Explorer rivelazione di informazioni</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Microsoft Windows. Riguarda una funzione sconosciuta del componente File E...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#41</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-23-cve-2026-50459-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50459 | Microsoft Windows fino a Server 2025 Kernel buffer overflow</a>
+      <p class="card-desc">In Microsoft Windows fino a Server 2025 è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciuta...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#42</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-24-cve-2026-50456-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50456 | Microsoft Windows fino a Server 2025 File Explorer rivelazione di informazioni</a>
+      <p class="card-desc">In Microsoft Windows è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzione sconosciuta nel componen...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#43</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-25-cve-2026-50453-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50453 | Microsoft Windows fino a Server 2025 USB Audio Class Driver usbaudio.sys rivelazione di informazioni</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in Microsoft Windows. Risulta coinvolta una funzione sconosciuta del file usbaudio...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#44</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-26-cve-2026-50451-microsoft-windows-routing-remote-ac.html" class="card-title">CVE-2026-50451 | Microsoft Windows Routing/Remote Access Service autenticazione debole</a>
+      <p class="card-desc">In Microsoft Windows stata rilevata una vulnerabilità di livello problematico. Da questa vulnerabilità è interessato una funzione sconosciut...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#45</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-27-cve-2026-50442-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50442 | Microsoft Windows fino a Server 2025 File Explorer rivelazione di informazioni</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in Microsoft Windows. É interessato una funzione sconosciuta del componente File ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#46</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-28-cve-2026-50440-microsoft-windows-11-24h2-11-25h2-1.html" class="card-title">CVE-2026-50440 | Microsoft Windows 11 24H2/11 25H2/11 26H1 Audio Service race condition</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in Microsoft Windows 11 24H2/11 25H2/11 26H1. Riguarda una funzione sconosciuta d...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#47</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-29-cve-2026-50437-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50437 | Microsoft Windows fino a Server 2025 DWM Core Library rivelazione di informazioni</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Microsoft Windows. Viene interessata una funzione sconosciuta appartenen...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#48</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-30-cve-2026-50436-microsoft-windows-11-24h2-11-25h2-1.html" class="card-title">CVE-2026-50436 | Microsoft Windows 11 24H2/11 25H2/11 26H1/Server 2025 Kernel buffer overflow</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Microsoft Windows 11 24H2/11 25H2/11 26H1/Server 2025. Si considera coi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#49</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-31-cve-2026-50434-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50434 | Microsoft Windows fino a Server 2025 Push Notifications rivelazione di informazioni</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Microsoft Windows fino a Server 2025. Risulta coinvolta una funzione sc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#50</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-32-cve-2026-50430-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50430 | Microsoft Windows fino a Server 2025 Push Notifications rivelazione di informazioni</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in Microsoft Windows. Da questa vulnerabilità è interessato una funzion...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#51</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-33-cve-2026-50428-microsoft-windows-26h1-container-is.html" class="card-title">CVE-2026-50428 | Microsoft Windows 26H1 Container Isolation FS Filter Driver unionfs.sys rivelazione di informazioni</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in Microsoft Windows 26H1. É interessato una funzione sconosciuta del file union...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#52</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-34-cve-2026-50423-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50423 | Microsoft Windows fino a Server 2025 Kernel escalationi di privilegi</a>
+      <p class="card-desc">Un punto di criticita di livello estremamente critico è stato rilevato in Microsoft Windows fino a Server 2025. Riguarda una funzione sconos...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#53</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-35-cve-2026-50421-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50421 | Microsoft Windows fino a Server 2025 Connected User Experiences/Telemetry escalationi di privilegi</a>
+      <p class="card-desc">In Microsoft Windows è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciuta appartenente al co...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#54</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-36-cve-2026-50420-microsoft-windows-11-24h2-11-25h2-1.html" class="card-title">CVE-2026-50420 | Microsoft Windows 11 24H2/11 25H2/11 26H1/Server 2025 HTTP.sys rivelazione di informazioni</a>
+      <p class="card-desc">In Microsoft Windows 11 24H2/11 25H2/11 26H1/Server 2025 è stata rilevato un punto critico di livello problematico. Si considera coinvolta u...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#55</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-37-cve-2026-50673-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50673 | Microsoft Windows fino a Server 2025 Kernel negazione del servizio</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in Microsoft Windows. Risulta coinvolta una funzione sconosciuta del componente Ke...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#56</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-38-cve-2026-50670-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50670 | Microsoft Windows fino a Server 2025 Kernel rivelazione di informazioni</a>
+      <p class="card-desc">In Microsoft Windows fino a Server 2025 stata rilevata una vulnerabilità di livello problematico. Da questa vulnerabilità è interessato una ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#57</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-39-cve-2026-50669-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50669 | Microsoft Windows fino a Server 2025 Telephony Service race condition</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in Microsoft Windows. É interessato una funzione sconosciuta del componente Telep...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#58</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-40-cve-2026-50667-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50667 | Microsoft Windows fino a Server 2025 NTFS race condition</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in Microsoft Windows. Riguarda una funzione sconosciuta del componente NTFS. La m...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#59</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-41-cve-2026-50510-microsoft-github-copilot-fino-a-1-1.html" class="card-title">CVE-2026-50510 | Microsoft GitHub Copilot fino a 1.13.0-250 escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Microsoft GitHub Copilot fino a 1.13.0-250. Viene interessata una funzio...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#60</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-42-cve-2026-50503-microsoft-windows-11-24h2-11-25h2-1.html" class="card-title">CVE-2026-50503 | Microsoft Windows 11 24H2/11 25H2/11 26H1/Server 2025 Synchronization race condition</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Microsoft Windows 11 24H2/11 25H2/11 26H1/Server 2025. Si considera coi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#61</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-43-cve-2026-50475-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50475 | Microsoft Windows fino a Server 2025 Kernel buffer overflow</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Microsoft Windows. Risulta coinvolta una funzione sconosciuta del compo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#62</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-44-cve-2026-50455-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50455 | Microsoft Windows fino a Server 2025 UPnP upnp.dll rivelazione di informazioni</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in Microsoft Windows. Da questa vulnerabilità è interessato una funzion...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#63</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-45-cve-2026-50419-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50419 | Microsoft Windows fino a Server 2025 Kernel rivelazione di informazioni</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in Microsoft Windows. É interessato una funzione sconosciuta del componente Kern...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#64</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-46-cve-2026-50485-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50485 | Microsoft Windows fino a Server 2025 Hyper-V rivelazione di informazioni</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Microsoft Windows. Riguarda una funzione sconosciuta del componente Hyper-...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#65</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-47-cve-2026-50447-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50447 | Microsoft Windows fino a Server 2025 Message Queuing buffer overflow</a>
+      <p class="card-desc">In Microsoft Windows è stato trovato un punto critico di livello estremamente critico. Viene interessata una funzione sconosciuta appartenen...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#66</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-48-cve-2026-50444-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50444 | Microsoft Windows fino a Server 2025 Windows Server Update Service autenticazione debole</a>
+      <p class="card-desc">In Microsoft Windows fino a Server 2025 è stata rilevato un punto critico di livello estremamente critico. Si considera coinvolta una funzio...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#67</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-49-cve-2026-50426-microsoft-windows-fino-a-2025-dns-s.html" class="card-title">CVE-2026-50426 | Microsoft Windows fino a 2025 DNS Server directory traversal</a>
+      <p class="card-desc">Un punto critico di livello estremamente critico è stato rilevato in Microsoft Windows fino a 2025. Risulta coinvolta una funzione sconosciu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#68</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-50-cve-2026-50424-microsoft-windows-11-24h2-11-25h2-1.html" class="card-title">CVE-2026-50424 | Microsoft Windows 11 24H2/11 25H2/11 26H1/Server 2025 Domain Controller negazione del servizio</a>
+      <p class="card-desc">In Microsoft Windows 11 24H2/11 25H2/11 26H1/Server 2025 stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è inte...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#69</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-51-cve-2026-50647-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50647 | Microsoft Windows fino a Server 2025 Active Directory Federation Services negazione del servizio</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello critico in Microsoft Windows. É interessato una funzione sconosciuta del componente Active Dir...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#70</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-52-cve-2026-50518-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50518 | Microsoft Windows fino a Server 2025 DHCP Server buffer overflow</a>
+      <p class="card-desc">Una vulnerabilità di livello estremamente critico è stata rilevata in Microsoft Windows fino a Server 2025. Riguarda una funzione sconosciut...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#71</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-53-cve-2026-50505-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50505 | Microsoft Windows fino a Server 2025 Message Queuing buffer overflow</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come estremamente critico in Microsoft Windows. Viene interessata una funzione sconosciuta ap...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#72</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-54-cve-2026-50502-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50502 | Microsoft Windows fino a Server 2025 Event Logging Service escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come estremamente critico in Microsoft Windows. Si considera coinvolta una funzione sconosci...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#73</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-55-cve-2026-50500-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50500 | Microsoft Windows fino a Server 2025 Netlogon buffer overflow</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come estremamente critico in Microsoft Windows. Risulta coinvolta una funzione sconosciuta d...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#74</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-56-cve-2026-50498-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50498 | Microsoft Windows fino a Server 2025 Universal Disk Format File System Driver escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in Microsoft Windows. Da questa vulnerabilità è interessato una funzion...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#75</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-57-cve-2026-50496-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50496 | Microsoft Windows fino a Server 2025 Network Policy Server SNMP rivelazione di informazioni</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in Microsoft Windows. É interessato una funzione sconosciuta del componente Netw...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#76</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-58-cve-2026-50474-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50474 | Microsoft Windows fino a Server 2025 Remote Desktop Client buffer overflow</a>
+      <p class="card-desc">Un punto di criticita di livello critico è stato rilevato in Microsoft Windows. Riguarda una funzione sconosciuta del componente Remote Desk...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#77</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-59-cve-2026-50470-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50470 | Microsoft Windows fino a Server 2025 Network Policy Server SNMP rivelazione di informazioni</a>
+      <p class="card-desc">In Microsoft Windows è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciuta appartenente al co...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#78</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-60-cve-2026-50468-microsoft-sql-server-buffer-overflo.html" class="card-title">CVE-2026-50468 | Microsoft SQL Server buffer overflow</a>
+      <p class="card-desc">In Microsoft SQL Server è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzione sconosciuta. Attraver...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#79</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-61-cve-2026-50460-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50460 | Microsoft Windows fino a Server 2025 Windows Runtime race condition</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in Microsoft Windows fino a Server 2025. Risulta coinvolta una funzione sconosciut...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#80</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-62-cve-2026-50452-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50452 | Microsoft Windows fino a Server 2025 Windows Runtime race condition</a>
+      <p class="card-desc">In Microsoft Windows fino a Server 2025 stata rilevata una vulnerabilità di livello estremamente critico. Da questa vulnerabilità è interess...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#81</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-63-cve-2026-50445-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50445 | Microsoft Windows fino a Server 2025 RDP rivelazione di informazioni</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in Microsoft Windows. É interessato una funzione sconosciuta del componente RDP. ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#82</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-64-cve-2026-50431-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50431 | Microsoft Windows fino a Server 2025 QoS Packet Scheduler rivelazione di informazioni</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in Microsoft Windows. Riguarda una funzione sconosciuta del componente QoS Packet...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#83</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-65-cve-2026-50666-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50666 | Microsoft Windows fino a Server 2025 Remote Access Connection Manager buffer overflow</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come estremamente critico in Microsoft Windows. Viene interessata una funzione sconosciuta ap...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#84</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-66-cve-2026-50497-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50497 | Microsoft Windows fino a Server 2025 Remote Desktop Protocol buffer overflow</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Microsoft Windows. Si considera coinvolta una funzione sconosciuta nel ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#85</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-67-cve-2026-50463-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50463 | Microsoft Windows fino a Server 2025 Kernel rivelazione di informazioni</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Microsoft Windows fino a Server 2025. Risulta coinvolta una funzione sc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#86</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-68-cve-2026-50429-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50429 | Microsoft Windows fino a Server 2025 Kernel rivelazione di informazioni</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in Microsoft Windows. Da questa vulnerabilità è interessato una funzion...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#87</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-69-cve-2026-50504-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50504 | Microsoft Windows fino a Server 2025 Remote Desktop Client buffer overflow</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in Microsoft Windows. É interessato una funzione sconosciuta del componente Remo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#88</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-70-cve-2026-50450-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50450 | Microsoft Windows fino a Server 2025 Wireless Wide Area Network Service race condition</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Microsoft Windows fino a Server 2025. Riguarda una funzione sconosciuta de...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#89</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-71-cve-2026-50458-microsoft-windows-11-24h2-11-25h2-1.html" class="card-title">CVE-2026-50458 | Microsoft Windows 11 24H2/11 25H2/11 26H1/Server 2025 Brokering File System buffer overflow</a>
+      <p class="card-desc">In Microsoft Windows 11 24H2/11 25H2/11 26H1/Server 2025 è stato trovato un punto critico di livello problematico. Viene interessata una fun...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#90</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-72-cve-2026-50438-microsoft-pc-manager-3-18-0-0-3-21-.html" class="card-title">CVE-2026-50438 | Microsoft PC Manager 3.18.0.0/3.21.6.0 Link Resolution escalationi di privilegi</a>
+      <p class="card-desc">In Microsoft PC Manager 3.18.0.0/3.21.6.0 è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzione sco...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#91</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-73-cve-2026-50658-microsoft-defender-for-endpoint-for.html" class="card-title">CVE-2026-50658 | Microsoft Defender for Endpoint for Mac fino a 101.26042.19 race condition</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in Microsoft Defender for Endpoint for Mac fino a 101.26042.19. Risulta coinvolta ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#92</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-74-cve-2026-50483-microsoft-windows-11-24h2-11-25h2-1.html" class="card-title">CVE-2026-50483 | Microsoft Windows 11 24H2/11 25H2/11 26H1/Server 2025 Graphics rivelazione di informazioni</a>
+      <p class="card-desc">In Microsoft Windows 11 24H2/11 25H2/11 26H1/Server 2025 stata rilevata una vulnerabilità di livello problematico. Da questa vulnerabilità è...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#93</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-75-cve-2026-50657-microsoft-defender-fino-a-101-26042.html" class="card-title">CVE-2026-50657 | Microsoft Defender fino a 101.26042.19 rivelazione di informazioni</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in Microsoft Defender fino a 101.26042.19. É interessato una funzione sconosciuta...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#94</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-76-cve-2026-50495-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50495 | Microsoft Windows fino a Server 2025 DNS escalationi di privilegi</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in Microsoft Windows fino a Server 2025. Riguarda una funzione sconosciuta del co...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#95</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-77-cve-2026-50439-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50439 | Microsoft Windows fino a Server 2025 Queue Manager buffer overflow</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come estremamente critico in Microsoft Windows. Viene interessata una funzione sconosciuta ap...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#96</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-78-cve-2026-50476-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50476 | Microsoft Windows fino a Server 2025 buffer overflow</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Microsoft Windows. Si considera coinvolta una funzione sconosciuta. Med...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#97</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-79-cve-2026-50467-microsoft-office-buffer-overflow.html" class="card-title">CVE-2026-50467 | Microsoft Office buffer overflow</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Microsoft Office. Risulta coinvolta una funzione sconosciuta. Attravers...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#98</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-80-cve-2026-50465-microsoft-windows-11-24h2-11-25h2-1.html" class="card-title">CVE-2026-50465 | Microsoft Windows 11 24H2/11 25H2/11 26H1/Server 2025 DNS escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in Microsoft Windows 11 24H2/11 25H2/11 26H1/Server 2025. Da questa vul...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#99</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-81-cve-2026-50665-microsoft-office-rivelazione-di-inf.html" class="card-title">CVE-2026-50665 | Microsoft Office rivelazione di informazioni</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in Microsoft Office. É interessato una funzione sconosciuta. La gestione determi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#100</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-82-cve-2026-50487-microsoft-windows-11-24h2-11-25h2-1.html" class="card-title">CVE-2026-50487 | Microsoft Windows 11 24H2/11 25H2/11 26H1/Server 2025 DNS buffer overflow</a>
+      <p class="card-desc">Un punto di criticita di livello estremamente critico è stato rilevato in Microsoft Windows 11 24H2/11 25H2/11 26H1/Server 2025. Riguarda un...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#101</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-83-cve-2026-50400-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50400 | Microsoft Windows fino a Server 2025 App Installer buffer overflow</a>
+      <p class="card-desc">In Microsoft Windows è stato trovato un punto critico di livello estremamente critico. Viene interessata una funzione sconosciuta appartenen...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#102</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-84-cve-2026-50413-microsoft-windows-24h2-25h2-26h1-se.html" class="card-title">CVE-2026-50413 | Microsoft Windows 24H2/25H2/26H1/Server 2025 Runtime buffer overflow</a>
+      <p class="card-desc">In Microsoft Windows 24H2/25H2/26H1/Server 2025 è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzio...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#103</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-85-cve-2026-50412-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50412 | Microsoft Windows fino a Server 2025 NTFS buffer overflow</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in Microsoft Windows. Risulta coinvolta una funzione sconosciuta del componente NT...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#104</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-86-cve-2026-50410-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50410 | Microsoft Windows fino a Server 2025 Runtime buffer overflow</a>
+      <p class="card-desc">In Microsoft Windows fino a Server 2025 stata rilevata una vulnerabilità di livello problematico. Da questa vulnerabilità è interessato una ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#105</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-87-cve-2026-50407-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50407 | Microsoft Windows fino a Server 2025 ReFS buffer overflow</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in Microsoft Windows. É interessato una funzione sconosciuta del componente ReFS....</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#106</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-88-cve-2026-50406-microsoft-windows-fino-a-11-26h1-ba.html" class="card-title">CVE-2026-50406 | Microsoft Windows fino a 11 26H1 Backup Engine buffer overflow</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in Microsoft Windows 10 21H2/10 22H2/11 24H2/11 25H2/11 26H1. Riguarda una funzio...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#107</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-89-cve-2026-50405-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50405 | Microsoft Windows fino a Server 2025 WFP escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Microsoft Windows. Viene interessata una funzione sconosciuta appartenen...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#108</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-90-cve-2026-50402-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50402 | Microsoft Windows fino a Server 2025 NTFS escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Microsoft Windows. Si considera coinvolta una funzione sconosciuta nel ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#109</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-91-cve-2026-50391-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50391 | Microsoft Windows fino a Server 2025 Group Policy escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Microsoft Windows. Risulta coinvolta una funzione sconosciuta del compo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#110</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-92-cve-2026-50388-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50388 | Microsoft Windows fino a Server 2025 NTFS rivelazione di informazioni</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in Microsoft Windows. Da questa vulnerabilità è interessato una funzion...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#111</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-93-cve-2026-50387-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50387 | Microsoft Windows fino a Server 2025 GDI buffer overflow</a>
+      <p class="card-desc">Un punto di debole di livello estremamente critico è stato rilevato in Microsoft Windows. É interessato una funzione sconosciuta del compone...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#112</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-94-cve-2026-50386-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50386 | Microsoft Windows fino a Server 2025 NTFS buffer overflow</a>
+      <p class="card-desc">Un punto di criticita di livello estremamente critico è stato rilevato in Microsoft Windows. Riguarda una funzione sconosciuta del component...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#113</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-95-cve-2026-50382-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50382 | Microsoft Windows fino a Server 2025 DirectX negazione del servizio</a>
+      <p class="card-desc">In Microsoft Windows fino a Server 2025 è stato trovato un punto critico di livello estremamente critico. Viene interessata una funzione sco...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#114</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-96-cve-2026-50374-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50374 | Microsoft Windows fino a Server 2025 Cloud Files Mini Filter Driver buffer overflow</a>
+      <p class="card-desc">In Microsoft Windows fino a Server 2025 è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzione scono...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#115</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-97-cve-2026-50375-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50375 | Microsoft Windows fino a Server 2025 DirectX buffer overflow</a>
+      <p class="card-desc">Un punto critico di livello estremamente critico è stato rilevato in Microsoft Windows fino a Server 2025. Risulta coinvolta una funzione sc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#116</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-98-cve-2026-50372-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50372 | Microsoft Windows fino a Server 2025 Redirected Drive Buffering buffer overflow</a>
+      <p class="card-desc">In Microsoft Windows stata rilevata una vulnerabilità di livello problematico. Da questa vulnerabilità è interessato una funzione sconosciut...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#117</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-99-cve-2026-50363-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50363 | Microsoft Windows fino a Server 2025 Push Notifications buffer overflow</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in Microsoft Windows. É interessato una funzione sconosciuta del componente Push ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#118</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-100-cve-2026-50362-microsoft-windows-fino-a-server-202.html" class="card-title">CVE-2026-50362 | Microsoft Windows fino a Server 2025 ReFS buffer overflow</a>
+      <p class="card-desc">Una vulnerabilità di livello estremamente critico è stata rilevata in Microsoft Windows. Riguarda una funzione sconosciuta del componente Re...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#119</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-103-researchers-say-claude-for-chrome-flaw-lets-rogue-.html" class="card-title">Researchers Say Claude for Chrome Flaw Lets Rogue Extensions Trigger Gmail Reads</a>
+      <p class="card-desc">Any other browser extension that can run a script on claude.ai can still trigger Claude for Chrome tasks aimed at your Gmail, your latest Go...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#120</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-104-labubarat-masquerades-as-nvidia-software-to-contro.html" class="card-title">LabubaRAT Masquerades as NVIDIA Software to Control Windows Hosts</a>
+      <p class="card-desc">Cybersecurity researchers have flagged a previously undocumented Rust-based remote access trojan (RAT) codenamed LabubaRAT that masquerades ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#121</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-105-rabbitmq-flaws-could-leak-oauth-secrets-and-expose.html" class="card-title">RabbitMQ Flaws Could Leak OAuth Secrets and Expose Cross-Tenant Queue Metadata</a>
+      <p class="card-desc">Cybersecurity researchers have disclosed details of two access control-related flaws impacting the RabbitMQ message broker service that coul...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#122</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-106-11-old-microsoft-signed-linux-uefi-shims-could-let.html" class="card-title">11 Old Microsoft-Signed Linux UEFI Shims Could Let Attackers Bypass Secure Boot</a>
+      <p class="card-desc">Cybersecurity researchers have discovered 11 old, Microsoft-signed, Unified Extensible Firmware Interface (UEFI) applications that could be ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#123</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-107-study-of-85-crypto-wallet-extensions-finds-address.html" class="card-title">Study of 85 Crypto Wallet Extensions Finds Address Leaks and Cross-Site Tracking Risks</a>
+      <p class="card-desc">Researchers at KU Leuven tested 85 of the most popular crypto wallets that run as browser extensions and found that the wallets themselves l...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#124</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-108-how-pentera-turns-ai-security-workflows-into-valid.html" class="card-title">How Pentera Turns AI Security Workflows into Validation Engines</a>
+      <p class="card-desc">AI security agents are starting to influence real security decisions. They summarize findings, prioritize remediation, recommend next steps,...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#125</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-109-oauth-client-id-spoofing-lets-attackers-validate-s.html" class="card-title">OAuth Client ID Spoofing Lets Attackers Validate Stolen Microsoft Entra Credentials</a>
+      <p class="card-desc">At least two distinct threat actors are weaponizing a novel evasion technique called OAuth client ID spoofing in cloud campaigns, while slip...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#126</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-110-grok-build-uploaded-entire-git-repositories-to-xai.html" class="card-title">Grok Build Uploaded Entire Git Repositories to xAI Storage, Not Just Files It Read</a>
+      <p class="card-desc">xAI&#39;s Grok Build coding CLI was uploading entire Git repositories, full commit history and all, to a Google Cloud Storage bucket run by xAI,...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#127</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-111-u-s-sanctions-first-vpn-service-and-malware-crypto.html" class="card-title">U.S. Sanctions First VPN Service and Malware Cryptor Seller Over Ransomware Support</a>
+      <p class="card-desc">The U.S. Treasury Department&#39;s Office of Foreign Assets Control (OFAC) has designated two individuals and a VPN service provider for enablin...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#128</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-112-148-npm-packages-disguised-as-student-proxies-turn.html" class="card-title">148 npm Packages Disguised as Student Proxies Turned Browsers Into a DDoS Botnet</a>
+      <p class="card-desc">A campaign of 148 npm packages disguised as student web proxies turned visitors&#39; browsers into a distributed denial-of-service botnet for ro...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#129</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-113-microsoft-maps-three-salesforce-attack-paths-tied-.html" class="card-title">Microsoft Maps Three Salesforce Attack Paths Tied to a Year of ShinyHunters Activity</a>
+      <p class="card-desc">Attackers whose methods line up with the data-extortion group&amp;nbsp;ShinyHunters&amp;nbsp;have spent the past year walking into corporate Salesfo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#130</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-115-spanish-police-take-down-140-million-cyber-fraud-r.html" class="card-title">Spanish Police take down €140 million cyber fraud ring, arrest four</a>
+      <p class="card-desc">The Spanish Police dismantled a cybercrime and money-laundering organization that made €140 million ($160 million) from investment fraud and...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#131</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-116-nearly-300-github-repos-pose-as-legit-software-to-.html" class="card-title">Nearly 300 GitHub repos pose as legit software to push malware</a>
+      <p class="card-desc">A threat actor has published hundreds of fake GitHub repositories impersonating legitimate software and security projects to distribute info...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#132</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-117-microsoft-releases-windows-10-kb5099539-extended-s.html" class="card-title">Microsoft releases Windows 10 KB5099539 extended security update</a>
+      <p class="card-desc">Microsoft has released the Windows 10 KB5099539 extended security update, which includes the July 2026 Patch Tuesday security updates for 57...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#133</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-119-windows-11-kb5101650-kb5099414-cumulative-updates-.html" class="card-title">Windows 11 KB5101650 &amp; KB5099414 cumulative updates released</a>
+      <p class="card-desc">Microsoft has released Windows 11&#39;s June 2026 Update for version 25H2, 24H2, and 23H2, bringing fixes for over 570 security issues. [...]</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#134</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-121-lastpass-bitwarden-users-targeted-with-fake-securi.html" class="card-title">LastPass, Bitwarden users targeted with fake security alerts</a>
+      <p class="card-desc">LastPass is warning users about an ongoing phishing campaign that is using fake security notices to direct them to fraudulent websites. [......</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#135</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-123-microsoft-entra-id-gets-passkeys-default-authentic.html" class="card-title">Microsoft Entra ID gets passkeys default authentication starting September</a>
+      <p class="card-desc">Microsoft has announced that passkeys will become the default authentication method for the Entra ID enterprise identity service starting Se...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#136</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-124-new-phishing-kits-target-microsoft-365-accounts-ev.html" class="card-title">New phishing kits target Microsoft 365 accounts, evade MFA</a>
+      <p class="card-desc">Two new phishing kits, Jalisco and OmegaLord, have been discovered in attacks targeting Microsoft 365 accounts, using techniques that defeat...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#137</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-126-microsoft-starts-testing-cleaner-windows-search-wi.html" class="card-title">Microsoft starts testing cleaner Windows Search without ads</a>
+      <p class="card-desc">Microsoft is now testing a cleaner and faster version of Windows Search that should prioritize relevant results over ads and promotional con...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#138</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-127-us-sanctions-vpn-malware-providers-for-enabling-ra.html" class="card-title">US sanctions VPN, malware providers for enabling ransomware attacks</a>
+      <p class="card-desc">The U.S. Treasury Department&#39;s Office of Foreign Assets Control (OFAC) sanctioned two individuals and one entity for enabling ransomware att...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#139</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-129-6-ghz-wi-fi-flaws-could-disrupt-critical-systems.html" class="card-title">6 GHz Wi-Fi Flaws Could Disrupt Critical Systems</a>
+      <p class="card-desc">Automated Frequency Coordination systems by default trust client-side data, which could lead to location spoofing and other attacks that dis...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#140</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-130-manage-vendor-risk-in-a-few-practical-steps.html" class="card-title">Manage Vendor Risk in a Few Practical Steps</a>
+      <p class="card-desc">Risk tolerance, exposure visibility, board oversight — handling third-party risk is complicated but achievable with disciplined, precise gov...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#141</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-131-frontier-ai-the-genie-s-out-of-the-bottle-but-wher.html" class="card-title">Frontier AI: The Genie&#39;s Out of the Bottle, but Where&#39;s the Rulebook?</a>
+      <p class="card-desc">Cutting-edge artificial intelligence models are deploying with more independence and less human oversight. Several state governments are try...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#142</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-132-clickfix-s-mushrooming-ecosystem-demands-new-defen.html" class="card-title">ClickFix&#39;s Mushrooming Ecosystem Demands New Defense Tactics</a>
+      <p class="card-desc">The attack vector is available for rent at scale, and evades AV and EDR, leaving YARA analysis as the best detection option.</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#143</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-133-cursor-ide-auto-executes-malicious-code-in-poisone.html" class="card-title">Cursor IDE Auto-Executes Malicious Code in Poisoned Repos</a>
+      <p class="card-desc">Researchers reported the vulnerability to Cursor in December, but it still remains in the popular AI coding platform and can be exploited in...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#144</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-134-new-legacyhive-windows-0-day-vulnerability-allows-.html" class="card-title">New LegacyHive Windows 0-day Vulnerability Allows Users to Load Another User’s Registry</a>
+      <p class="card-desc">A proof-of-concept exploit dubbed LegacyHive has been released, enabling a Windows elevation-of-privilege vulnerability in the Windows User ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#145</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-137-windows-bitlocker-0-day-vulnerability-allows-hacke.html" class="card-title">Windows BitLocker 0‑Day Vulnerability Allows Hackers to Bypass Security Feature</a>
+      <p class="card-desc">A newly disclosed Windows BitLocker 0‑day vulnerability, tracked as CVE-2026-50661, exposes encrypted devices to physical attacks that can c...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#146</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-139-massive-microsoft-patch-tuesday-update-570-vulnera.html" class="card-title">Massive Microsoft Patch Tuesday Update: 570 Vulnerabilities Fixed, Including 3 Zero-Days</a>
+      <p class="card-desc">Microsoft&amp;#8217;s July 2026 Patch Tuesday delivers fixes for approximately 570 vulnerabilities across its product ecosystem, following June&amp;...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#147</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-141-hackers-spoof-3-7-million-oauth-client-ids-to-stea.html" class="card-title">Hackers Spoof 3.7 Million OAuth Client IDs to Stealthily Enumerate 2 Million Entra ID Users</a>
+      <p class="card-desc">Threat actors are increasingly exploiting spoofed OAuth client IDs to enumerate Microsoft Entra ID accounts and identify potentially valid c...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#148</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-142-claude-for-chrome-vulnerability-lets-attackers-rea.html" class="card-title">Claude for Chrome Vulnerability Lets Attackers Read Gmail, Docs, and Calendar Data</a>
+      <p class="card-desc">Anthropic&amp;#8217;s Claude for Chrome browser extension has two unpatched flaws that allow attackers to read a victim&amp;#8217;s Gmail, Google Do...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#149</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-145-microsoft-patches-record-622-vulnerabilities-inclu.html" class="card-title">Microsoft Patches Record 622 Vulnerabilities, Including Two Exploited Zero-Days</a>
+      <p class="card-desc">Two flaws in Active Directory and SharePoint Server have been exploited as zero-days, and a BitLocker bug was publicly disclosed. The post M...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#150</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-146-synopsys-finds-no-evidence-of-data-breach-amid-bos.html" class="card-title">Synopsys Finds No Evidence of Data Breach Amid Bosch Hack Claims</a>
+      <p class="card-desc">The D1R cybercrime group claimed to have stolen valuable data from Synopsys and Bosch, threatening to leak it unless a ransom is paid. The p...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#151</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-149-unpatched-claude-for-chrome-flaw-lets-extensions-r.html" class="card-title">Unpatched Claude for Chrome Flaw Lets Extensions Read Gmail, Calendar</a>
+      <p class="card-desc">A ClaudeBleed-linked vulnerability reportedly persists across eight patches, exposing potentially sensitive data to other extensions. The po...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#152</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-152-valarian-raises-50-million-for-sovereign-infrastru.html" class="card-title">Valarian Raises $50 Million for Sovereign Infrastructure Control Layer</a>
+      <p class="card-desc">UK-based cybersecurity firm Valarian has raised a total of $70 million for its ACRA technology. The post Valarian Raises $50 Million for Sov...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#153</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-153-multiple-jscrambler-packages-impacted-by-supply-ch.html" class="card-title">Multiple Jscrambler Packages Impacted by Supply Chain Attack</a>
+      <p class="card-desc">A threat actor poisoned several Jscrambler NPM package versions to drop a cross-platform credential stealer. The post Multiple Jscrambler Pa...</p>
+    </div>
+</div>
+
+<div class="no-results" id="no-results">
+  <p>Nessun risultato trovato</p>
+</div>
+
+<footer class="footer">
+  <p>Cyber Security News Dashboard - Generato automaticamente senza amore o sentimento</p>
+  <p>Creato (con n8n e un pochino di javascript scritto da un LLM) da: <a href="https://www.linkedin.com/in/mocciaalessandro" target="_blank">Alessandro</a></p>
+</footer>
+
+<script>
+(function() {
+  const cards = document.querySelectorAll('.card');
+  const buttons = document.querySelectorAll('[data-filter]');
+  const searchInput = document.getElementById('search');
+  const noResults = document.getElementById('no-results');
+  
+  let currentFilter = 'all';
+  let searchTerm = '';
+
+  const filterCards = () => {
+    let visibleCount = 0;
+    
+    cards.forEach(card => {
+      const matchesFilter = currentFilter === 'all' || card.dataset.severity === currentFilter;
+      const matchesSearch = !searchTerm || card.textContent.toLowerCase().includes(searchTerm);
+      const isVisible = matchesFilter && matchesSearch;
+      
+      card.style.display = isVisible ? 'block' : 'none';
+      if (isVisible) visibleCount++;
+    });
+    
+    noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+  };
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      filterCards();
+    });
+  });
+
+  let debounceTimer;
+  searchInput.addEventListener('input', (e) => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      searchTerm = e.target.value.toLowerCase();
+      filterCards();
+    }, 150);
+  });
+})();
+</script>
+
+</body>
+</html>
