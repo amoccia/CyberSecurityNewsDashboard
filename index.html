@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyber Security News Dashboard</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --primary: #00ff9f;
+      --primary-dim: #00cc7a;
+      --card-bg: #111;
+      --border: rgba(0, 255, 159, 0.2);
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--primary);
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.5;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      font-size: clamp(1.2rem, 4vw, 2rem);
+      text-shadow: 0 0 20px var(--primary);
+      margin: 0 0 10px 0;
+    }
+    .header time {
+      font-size: 0.85rem;
+      opacity: 0.7;
+    }
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 25px;
+    }
+    .stat {
+      padding: 8px 15px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      background: var(--card-bg);
+    }
+    .stat.critical { border-color: #ff4444; }
+    .stat.high { border-color: #ff8c00; }
+    .stat.medium { border-color: #ffd700; }
+    .stat.low { border-color: var(--primary-dim); }
+    .controls {
+      max-width: 900px;
+      margin: 0 auto 25px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .search-wrapper {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+    .search-wrapper::before {
+      content: '🔍';
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+    }
+    input {
+      width: 100%;
+      padding: 10px 10px 10px 35px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--primary);
+      font-family: inherit;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .filter-buttons {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 10px 15px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--primary);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    button:hover, button.active {
+      background: var(--primary);
+      color: var(--bg);
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      display: grid;
+      gap: 15px;
+    }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 15px;
+      background: var(--card-bg);
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .index {
+      font-size: 12px;
+      opacity: 0.6;
+    }
+    .badge {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    .critical { background: #ff4444; color: #fff; }
+    .high { background: #ff8c00; color: #000; }
+    .medium { background: #ffd700; color: #000; }
+    .low { background: var(--primary-dim); color: #000; }
+    .card-title {
+      display: block;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: bold;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .card-title:hover { text-decoration: underline; }
+    .card-desc {
+      font-size: 12px;
+      color: var(--primary-dim);
+      margin: 0;
+    }
+    .no-results {
+      text-align: center;
+      padding: 40px;
+      opacity: 0.6;
+      display: none;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      opacity: 0.6;
+      text-align: center;
+    }
+    @media (max-width: 600px) {
+      .controls { flex-direction: column; }
+      .filter-buttons { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🛡️ CYBER SECURITY NEWS DASHBOARD</h1>
+  <time datetime="2026-07-22T11:03:31.308Z">22/07/2026, 11:03</time>
+</div>
+
+<div class="stats">
+  <div class="stat">📊 Totale: <strong>147</strong></div>
+  <div class="stat critical">🔴 Critical: <strong>10</strong></div>
+  <div class="stat high">🟠 High: <strong>5</strong></div>
+  <div class="stat medium">🟡 Medium: <strong>3</strong></div>
+  <div class="stat low">🟢 Low: <strong>129</strong></div>
+</div>
+
+<div class="controls">
+  <div class="search-wrapper">
+    <input type="search" id="search" placeholder="Cerca nelle notizie..." aria-label="Cerca">
+  </div>
+  <div class="filter-buttons">
+    <button class="active" data-filter="all">Tutte</button>
+    <button data-filter="critical">Critical</button>
+    <button data-filter="high">High</button>
+    <button data-filter="medium">Medium</button>
+    <button data-filter="low">Low</button>
+  </div>
+</div>
+
+<div class="container" id="cards">
+  
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#01</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-106-aws-kiro-flaw-let-a-poisoned-web-page-rewrite-its-.html" class="card-title">AWS Kiro Flaw Let a Poisoned Web Page Rewrite Its Config and Run Code</a>
+      <p class="card-desc">Hidden text on a web page was enough to make Kiro, AWS&#39;s agentic coding IDE, rewrite its own configuration file and run an attacker&#39;s code o...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#02</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-108-critical-sharepoint-rce-cve-2026-50522-under-activ.html" class="card-title">Critical SharePoint RCE CVE-2026-50522 Under Active Exploitation After Public PoC</a>
+      <p class="card-desc">A third SharePoint Server flaw patched by Microsoft as part of its Patch Tuesday update for July 2026 has come under active exploitation, pe...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#03</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-110-zimbra-patches-critical-snmp-command-injection-and.html" class="card-title">Zimbra Patches Critical SNMP Command Injection and Four XSS Vulnerabilities</a>
+      <p class="card-desc">Zimbra has rolled out fixes to address multiple critical security issues, including a command injection flaw in the Simple Network Managemen...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#04</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-119-critical-sharepoint-rce-flaw-exploited-to-steal-ma.html" class="card-title">Critical SharePoint RCE flaw exploited to steal machine keys</a>
+      <p class="card-desc">Hackers are actively exploiting the critical CVE-2026-50522 vulnerability in Microsoft SharePoint to steal machine keys and maintain access ...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#05</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-121-critical-wp2shell-wordpress-flaws-exploited-to-ins.html" class="card-title">Critical wp2shell WordPress flaws exploited to install webshells</a>
+      <p class="card-desc">Hackers are exploiting the &quot;wp2shell&quot; critical vulnerability suite (CVE-2026-63030 and CVE-2026-60137) affecting WordPress Core to deploy pe...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#06</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-122-closing-the-identity-gaps-in-critical-infrastructu.html" class="card-title">Closing the Identity Gaps in Critical Infrastructure Security</a>
+      <p class="card-desc">Critical infrastructure attacks often begin with stolen credentials, compromised devices, or trusted accounts. Specops Software explains why...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#07</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-128-critical-zimbra-flaw-lets-attackers-inject-command.html" class="card-title">Critical Zimbra Flaw Lets Attackers Inject Commands Through the SNMP Monitoring Service</a>
+      <p class="card-desc">Zimbra fixed a critical Zimbra Collaboration Suite (ZCS) command injection flaw in version 10.1.20 that could allow attackers to abuse the S...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#08</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-139-oracle-patches-over-1-400-vulnerabilities-with-qua.html" class="card-title">Oracle Patches Over 1,400 Vulnerabilities With Quarterly Security Updates</a>
+      <p class="card-desc">Many of the vulnerabilities fixed with the July 2026 Critical Patch Update were likely discovered by AI. The post Oracle Patches Over 1,400 ...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#09</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-142-trump-orders-defense-contractors-to-map-software-s.html" class="card-title">Trump Orders Defense Contractors to Map Software, Suppliers Across Critical Supply Chains</a>
+      <p class="card-desc">New executive order calls for end-to-end visibility into defense supply chains, including software dependencies, foreign ownership and cyber...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#10</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-145-securityweek-launches-critical-impact-awards-to-re.html" class="card-title">SecurityWeek Launches Critical Impact Awards to Recognize Excellence in Industrial Cybersecurity</a>
+      <p class="card-desc">Independently judged and sponsor-neutral, the new awards program honors the people, organizations, and technologies delivering proven impact...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#11</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-23-cve-2026-56844-veeam-software-appliance-fino-a-13-.html" class="card-title">CVE-2026-56844 | Veeam Software Appliance fino a 13.0.1 Updater Local Privilege Escalation (EUVD-2026-47595)</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come estremamente critico in Veeam Software Appliance fino a 13.0.1. Da questa vulnerabil...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#12</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-26-cve-2026-62465-oracle-hrms-us-fino-a-12-2-15-inter.html" class="card-title">CVE-2026-62465 | Oracle HRMS US fino a 12.2.15 Internal Operations Local Privilege Escalation</a>
+      <p class="card-desc">In Oracle HRMS US fino a 12.2.15 è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciuta appart...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#13</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-28-cve-2026-62561-oracle-hrms-fino-a-12-2-15-internal.html" class="card-title">CVE-2026-62561 | Oracle HRMS fino a 12.2.15 Internal Operations Local Privilege Escalation</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in Oracle HRMS fino a 12.2.15. Risulta coinvolta una funzione sconosciuta del comp...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#14</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-109-qilin-ransomware-attackers-exploit-pan-os-authenti.html" class="card-title">Qilin Ransomware Attackers Exploit PAN-OS Authentication Bypass for Initial Access</a>
+      <p class="card-desc">Threat actors have been observed exploiting a now-patched high-severity Palo Alto Networks PAN-OS vulnerability as an entry point to deploy ...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#15</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-125-using-llms-to-find-and-prioritize-vulnerabilities-.html" class="card-title">Using LLMs to Find and Prioritize Vulnerabilities Is No Easy Task</a>
+      <p class="card-desc">The latest large language models have high false-positive rates and fail to take into account the context of scans, leading to more work for...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#16</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-2-cve-2026-63264-joomshopping-plugin-fino-a-5-9-2-fr.html" class="card-title">CVE-2026-63264 | JoomShopping Plugin fino a 5.9.2 Frontend Controller cross site scripting</a>
+      <p class="card-desc">In JoomShopping Plugin fino a 5.9.2 è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciuta app...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#17</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-4-cve-2026-15787-brainstormforce-ultimate-addons-for.html" class="card-title">CVE-2026-15787 | brainstormforce Ultimate Addons for Elementor Plugin fino a 2.9.1 su WordPress Navigation Menu Widget wp_kses_post data-toggle-icon/data-close-icon cross site scripting</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in brainstormforce Ultimate Addons for Elementor Plugin fino a 2.9.1. Risulta coin...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#18</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-19-cve-2026-12968-product-addons-and-product-options-.html" class="card-title">CVE-2026-12968 | Product Addons and Product Options With Custom Fields Plugin Svg File Upload cross site scripting</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in Product Addons and Product Options With Custom Fields Plugin fino a 1.6.14. Ri...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#19</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-1-cve-2026-14551-servereye-client-fino-a-20-15-se3re.html" class="card-title">CVE-2026-14551 | Servereye Client fino a 20.15 SE3Recovery EmergencyRecoveryService.exe escalationi di privilegi</a>
+      <p class="card-desc">Un punto di criticita di livello estremamente critico è stato rilevato in Servereye Client fino a 20.15. Riguarda una funzione sconosciuta d...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#20</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-3-cve-2026-2406-online-registration-and-workflow-man.html" class="card-title">CVE-2026-2406 | Online Registration and Workflow Management System User-Controlled Key escalationi di privilegi</a>
+      <p class="card-desc">In Universe Software Computer Marketing Trade and Industry Online Registration and Workflow Management System fino a 12022026 è stata rileva...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#21</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-5-cve-2026-63047-joomdonation-events-booking-plugin-.html" class="card-title">CVE-2026-63047 | joomdonation Events Booking Plugin fino a 5.8.1 Invoice Download escalationi di privilegi</a>
+      <p class="card-desc">In joomdonation Events Booking Plugin fino a 5.8.1 stata rilevata una vulnerabilità di livello problematico. Da questa vulnerabilità è inter...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#22</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-6-cve-2026-63048-joomlack-fr-page-builder-ck-plugin-.html" class="card-title">CVE-2026-63048 | joomlack.fr Page Builder CK Plugin fino a 3.6.2 escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello critico in joomlack.fr Page Builder CK Plugin fino a 3.6.2. É interessato una funzione sconosc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#23</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-7-cve-2026-45820-101arrowz-fflate-fino-a-0-8-2-zip64.html" class="card-title">CVE-2026-45820 | 101arrowz fflate fino a 0.8.2 Zip64 src/index.ts unzipSync negazione del servizio</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in 101arrowz fflate fino a 0.4.8/0.5.3/0.6.10/0.7.4/0.8.2. Riguarda la funzione u...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#24</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-8-cve-2026-62562-oracle-hrms-fino-a-12-2-15-internal.html" class="card-title">CVE-2026-62562 | Oracle HRMS fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Oracle HRMS fino a 12.2.15. Viene interessata una funzione sconosciuta a...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#25</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-9-cve-2026-61187-oracle-agile-engineering-data-manag.html" class="card-title">CVE-2026-61187 | Oracle Agile Engineering Data Management 6.2.1 Install negazione del servizio</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Oracle Agile Engineering Data Management 6.2.1. Si considera coinvolta ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#26</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-10-cve-2026-61304-oracle-price-protection-fino-a-12-2.html" class="card-title">CVE-2026-61304 | Oracle Price Protection fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in Oracle Price Protection fino a 12.2.15. Risulta coinvolta una funzione scono...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#27</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-11-cve-2026-61237-oracle-peoplesoft-enterprise-fin-co.html" class="card-title">CVE-2026-61237 | Oracle PeopleSoft Enterprise FIN Common Objects Argentina Integration escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in Oracle PeopleSoft Enterprise FIN Common Objects Argentina 9.1. Da questa ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#28</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-12-cve-2026-60985-oracle-project-portfolio-analysis-f.html" class="card-title">CVE-2026-60985 | Oracle Project Portfolio Analysis fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in Oracle Project Portfolio Analysis fino a 12.2.15. É interessato una funzione ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#29</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-13-cve-2026-60694-oracle-enterprise-asset-management-.html" class="card-title">CVE-2026-60694 | Oracle Enterprise Asset Management fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">Un punto di criticita di livello critico è stato rilevato in Oracle Enterprise Asset Management fino a 12.2.15. Riguarda una funzione sconos...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#30</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-14-cve-2026-47052-oracle-server-cluster-innodb-negazi.html" class="card-title">CVE-2026-47052 | Oracle Server/Cluster InnoDB negazione del servizio</a>
+      <p class="card-desc">In Oracle Server and Cluster è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciuta appartenen...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#31</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-15-cve-2026-47019-oracle-product-hub-fino-a-12-2-15-i.html" class="card-title">CVE-2026-47019 | Oracle Product Hub fino a 12.2.15 Item Catalog escalationi di privilegi</a>
+      <p class="card-desc">In Oracle Product Hub fino a 12.2.15 è stata rilevato un punto critico di livello critico. Si considera coinvolta una funzione sconosciuta n...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#32</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-16-cve-2026-46990-oracle-enterprise-manager-base-plat.html" class="card-title">CVE-2026-46990 | Oracle Enterprise Manager Base Platform 13.5/24.1 Enterprise Config Management escalationi di privilegi</a>
+      <p class="card-desc">Un punto critico di livello estremamente critico è stato rilevato in Oracle Enterprise Manager Base Platform 13.5/24.1. Risulta coinvolta un...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#33</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-17-cve-2026-47030-oracle-java-se-8u491-javafx-escalat.html" class="card-title">CVE-2026-47030 | Oracle Java SE 8u491 JavaFX escalationi di privilegi</a>
+      <p class="card-desc">In Oracle Java SE 8u491 stata rilevata una vulnerabilità di livello problematico. Da questa vulnerabilità è interessato una funzione sconosc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#34</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-18-cve-2026-3821-supermicro-x14dbg-dap-x14dbi-smash-e.html" class="card-title">CVE-2026-3821 | Supermicro X14DBG-DAP/X14DBI SMASH escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello estremamente critico in Supermicro X14DBG-DAP and X14DBI. É interessato una funzione sconosciu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#35</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-20-cve-2026-14322-timetics-plugin-fino-a-1-0-56-su-wo.html" class="card-title">CVE-2026-14322 | Timetics Plugin fino a 1.0.56 su WordPress Booking Creation escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Timetics Plugin fino a 1.0.56 su WordPress. Viene interessata una funzio...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#36</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-21-cve-2026-12987-events-manager-plugin-fino-a-7-3-6-.html" class="card-title">CVE-2026-12987 | Events Manager Plugin fino a 7.3.6 su WordPress Registration iniezione SQL</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come critico in Events Manager Plugin fino a 7.3.6 su WordPress. Si considera coinvolta una ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#37</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-22-cve-2026-15802-chimpstudio-foodbakery-plugin-fino-.html" class="card-title">CVE-2026-15802 | Chimpstudio Foodbakery Plugin fino a 4.9 su WordPress delete_locations_backup_file_callback directory traversal (EUVD-2026-47611)</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Chimpstudio Foodbakery Plugin fino a 4.9 su WordPress. Risulta coinvolt...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#38</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-24-cve-2026-65318-weaviate-verba-fino-a-2-1-3-websock.html" class="card-title">CVE-2026-65318 | Weaviate Verba fino a 2.1.3 WebSocket Import Endpoint /ws/import_files escalationi di privilegi</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in Weaviate Verba fino a 2.1.3. É interessato una funzione sconosciuta del file ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#39</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-25-cve-2026-65319-feedbin-entries-text-api-id-rivelaz.html" class="card-title">CVE-2026-65319 | Feedbin Entries Text API ID rivelazione di informazioni</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Feedbin. Riguarda una funzione sconosciuta del componente Entries Text API...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#40</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-27-cve-2026-62516-oracle-demantra-demand-management-f.html" class="card-title">CVE-2026-62516 | Oracle Demantra Demand Management fino a 12.2.15 Product Security iniezione SQL</a>
+      <p class="card-desc">In Oracle Demantra Demand Management fino a 12.2.15 è stata rilevato un punto critico di livello critico. Si considera coinvolta una funzion...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#41</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-29-cve-2026-62547-oracle-workflow-fino-a-12-2-15-work.html" class="card-title">CVE-2026-62547 | Oracle Workflow fino a 12.2.15 Workflow Notification Mailer escalationi di privilegi</a>
+      <p class="card-desc">In Oracle Workflow fino a 12.2.15 stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato una funzione sc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#42</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-30-cve-2026-62469-oracle-human-resources-fino-a-12-2-.html" class="card-title">CVE-2026-62469 | Oracle Human Resources fino a 12.2.15 Enterprise Command Center escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in Oracle Human Resources fino a 12.2.15. É interessato una funzione sconosciuta ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#43</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-31-cve-2026-62508-oracle-time-and-labor-fino-a-12-2-1.html" class="card-title">CVE-2026-62508 | Oracle Time and Labor fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in Oracle Time and Labor fino a 12.2.15. Riguarda una funzione sconosciuta del co...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#44</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-32-cve-2026-62505-oracle-time-and-labor-fino-a-12-2-1.html" class="card-title">CVE-2026-62505 | Oracle Time and Labor fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come critico in Oracle Time and Labor fino a 12.2.15. Viene interessata una funzione sconosci...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#45</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-33-cve-2026-62487-oracle-contracts-integration-fino-a.html" class="card-title">CVE-2026-62487 | Oracle Contracts Integration fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come critico in Oracle Contracts Integration fino a 12.2.15. Si considera coinvolta una funz...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#46</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-34-cve-2026-62486-oracle-contracts-integration-fino-a.html" class="card-title">CVE-2026-62486 | Oracle Contracts Integration fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in Oracle Contracts Integration fino a 12.2.15. Risulta coinvolta una funzione ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#47</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-35-cve-2026-62479-oracle-public-sector-financials-fin.html" class="card-title">CVE-2026-62479 | Oracle Public Sector Financials fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in Oracle Public Sector Financials fino a 12.2.15. Da questa vulnerabilità è...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#48</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-36-cve-2026-62444-oracle-contracts-integration-fino-a.html" class="card-title">CVE-2026-62444 | Oracle Contracts Integration fino a 12.2.15 Internal Operations Esecuzione di codice remoto</a>
+      <p class="card-desc">Un punto di debole di livello critico è stato rilevato in Oracle Contracts Integration fino a 12.2.15. É interessato una funzione sconosciut...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#49</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-37-cve-2026-62443-oracle-contracts-integration-fino-a.html" class="card-title">CVE-2026-62443 | Oracle Contracts Integration fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Oracle Contracts Integration fino a 12.2.15. Riguarda una funzione sconosc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#50</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-38-cve-2026-62563-oracle-work-in-process-fino-a-12-2-.html" class="card-title">CVE-2026-62563 | Oracle Work in Process fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">In Oracle Work in Process fino a 12.2.15 è stato trovato un punto critico di livello critico. Viene interessata una funzione sconosciuta app...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#51</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-39-cve-2026-62517-oracle-production-scheduling-fino-a.html" class="card-title">CVE-2026-62517 | Oracle Production Scheduling fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">In Oracle Production Scheduling fino a 12.2.15 è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzion...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#52</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-40-cve-2026-62474-oracle-lease-and-finance-management.html" class="card-title">CVE-2026-62474 | Oracle Lease and Finance Management fino a 12.2.15 Lease Authoring escalationi di privilegi</a>
+      <p class="card-desc">Un punto critico di livello critico è stato rilevato in Oracle Lease and Finance Management fino a 12.2.15. Risulta coinvolta una funzione s...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#53</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-41-cve-2026-62473-oracle-installed-base-fino-a-12-2-1.html" class="card-title">CVE-2026-62473 | Oracle Installed Base fino a 12.2.15 Create Item Instance escalationi di privilegi</a>
+      <p class="card-desc">In Oracle Installed Base fino a 12.2.15 stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato una funzi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#54</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-42-cve-2026-62472-oracle-installed-base-fino-a-12-2-1.html" class="card-title">CVE-2026-62472 | Oracle Installed Base fino a 12.2.15 Create Item Instance escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello critico in Oracle Installed Base fino a 12.2.15. É interessato una funzione sconosciuta del co...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#55</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-43-cve-2026-62445-oracle-order-management-fino-a-12-2.html" class="card-title">CVE-2026-62445 | Oracle Order Management fino a 12.2.15 Product Diagnostic Tools escalationi di privilegi</a>
+      <p class="card-desc">Una vulnerabilità di livello critico è stata rilevata in Oracle Order Management fino a 12.2.15. Riguarda una funzione sconosciuta del compo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#56</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-44-cve-2026-62567-oracle-e-business-suite-fino-a-12-2.html" class="card-title">CVE-2026-62567 | Oracle E-Business Suite fino a 12.2.15 UK Payroll escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Oracle E-Business Suite fino a 12.2.15. Viene interessata una funzione s...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#57</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-45-cve-2026-62565-oracle-hrms-fino-a-12-2-15-us-payro.html" class="card-title">CVE-2026-62565 | Oracle HRMS fino a 12.2.15 US Payroll Year End escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come critico in Oracle HRMS fino a 12.2.15. Si considera coinvolta una funzione sconosciuta ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#58</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-46-cve-2026-62557-oracle-e-business-suite-fino-a-12-2.html" class="card-title">CVE-2026-62557 | Oracle E-Business Suite fino a 12.2.15 UK Payroll escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in Oracle E-Business Suite fino a 12.2.15. Risulta coinvolta una funzione scono...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#59</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-47-cve-2026-62549-oracle-hrms-fino-a-12-2-15-uk-payro.html" class="card-title">CVE-2026-62549 | Oracle HRMS fino a 12.2.15 UK Payroll escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in Oracle HRMS fino a 12.2.15. Da questa vulnerabilità è interessato una fun...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#60</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-48-cve-2026-62542-oracle-advanced-benefits-fino-a-12-.html" class="card-title">CVE-2026-62542 | Oracle Advanced Benefits fino a 12.2.15 Self Service Benefits escalationi di privilegi</a>
+      <p class="card-desc">Un punto di debole di livello critico è stato rilevato in Oracle Advanced Benefits fino a 12.2.15. É interessato una funzione sconosciuta de...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#61</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-49-cve-2026-62530-oracle-hrms-fino-a-12-2-15-french-h.html" class="card-title">CVE-2026-62530 | Oracle HRMS fino a 12.2.15 French HR escalationi di privilegi</a>
+      <p class="card-desc">Un punto di criticita di livello critico è stato rilevato in Oracle HRMS fino a 12.2.15. Riguarda una funzione sconosciuta del componente Fr...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#62</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-50-cve-2026-62528-oracle-hcm-configuration-workbench-.html" class="card-title">CVE-2026-62528 | Oracle HCM Configuration Workbench fino a 12.2.15 Install escalationi di privilegi</a>
+      <p class="card-desc">In Oracle HCM Configuration Workbench fino a 12.2.15 è stato trovato un punto critico di livello critico. Viene interessata una funzione sco...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#63</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-51-cve-2026-62527-oracle-learning-management-fino-a-1.html" class="card-title">CVE-2026-62527 | Oracle Learning Management fino a 12.2.15 Import And Export escalationi di privilegi</a>
+      <p class="card-desc">In Oracle Learning Management fino a 12.2.15 è stata rilevato un punto critico di livello critico. Si considera coinvolta una funzione scono...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#64</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-52-cve-2026-62525-oracle-quality-fino-a-12-2-15-quali.html" class="card-title">CVE-2026-62525 | Oracle Quality fino a 12.2.15 Quality Workbench Html System escalationi di privilegi</a>
+      <p class="card-desc">Un punto critico di livello critico è stato rilevato in Oracle Quality fino a 12.2.15. Risulta coinvolta una funzione sconosciuta del compon...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#65</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-53-cve-2026-62524-oracle-hrms-fino-a-12-2-15-us-payro.html" class="card-title">CVE-2026-62524 | Oracle HRMS fino a 12.2.15 US Payroll General escalationi di privilegi</a>
+      <p class="card-desc">In Oracle HRMS fino a 12.2.15 stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato una funzione sconos...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#66</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-54-cve-2026-62521-oracle-hrms-fino-a-12-2-15-us-payro.html" class="card-title">CVE-2026-62521 | Oracle HRMS fino a 12.2.15 US Payroll - General escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in Oracle HRMS fino a 12.2.15. É interessato una funzione sconosciuta del compone...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#67</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-55-cve-2026-62519-oracle-succession-planning-fino-a-1.html" class="card-title">CVE-2026-62519 | Oracle Succession planning fino a 12.2.15 Succession plan escalationi di privilegi</a>
+      <p class="card-desc">Una vulnerabilità di livello critico è stata rilevata in Oracle Succession planning fino a 12.2.15. Riguarda una funzione sconosciuta del co...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#68</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-56-cve-2026-62507-oracle-time-and-labor-fino-a-12-2-1.html" class="card-title">CVE-2026-62507 | Oracle Time and Labor fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Oracle Time and Labor fino a 12.2.15. Viene interessata una funzione sco...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#69</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-57-cve-2026-62504-oracle-time-and-labor-fino-a-12-2-1.html" class="card-title">CVE-2026-62504 | Oracle Time and Labor fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come critico in Oracle Time and Labor fino a 12.2.15. Si considera coinvolta una funzione sc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#70</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-58-cve-2026-62503-oracle-time-and-labor-fino-a-12-2-1.html" class="card-title">CVE-2026-62503 | Oracle Time and Labor fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Oracle Time and Labor fino a 12.2.15. Risulta coinvolta una funzione sc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#71</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-59-cve-2026-62497-oracle-flow-manufacturing-fino-a-12.html" class="card-title">CVE-2026-62497 | Oracle Flow Manufacturing fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in Oracle Flow Manufacturing fino a 12.2.15. Da questa vulnerabilità è inter...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#72</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-60-cve-2026-62494-oracle-time-and-labor-fino-a-12-2-1.html" class="card-title">CVE-2026-62494 | Oracle Time and Labor fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">Un punto di debole di livello critico è stato rilevato in Oracle Time and Labor fino a 12.2.15. É interessato una funzione sconosciuta del c...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#73</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-61-cve-2026-62490-oracle-contracts-integration-fino-a.html" class="card-title">CVE-2026-62490 | Oracle Contracts Integration fino a 12.2.15 Internal Operations rivelazione di informazioni</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Oracle Contracts Integration fino a 12.2.15. Riguarda una funzione sconosc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#74</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-62-cve-2026-62489-oracle-contracts-integration-fino-a.html" class="card-title">CVE-2026-62489 | Oracle Contracts Integration fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">In Oracle Contracts Integration fino a 12.2.15 è stato trovato un punto critico di livello critico. Viene interessata una funzione sconosciu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#75</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-63-cve-2026-62488-oracle-contracts-integration-fino-a.html" class="card-title">CVE-2026-62488 | Oracle Contracts Integration fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">In Oracle Contracts Integration fino a 12.2.15 è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzion...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#76</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-64-cve-2026-62484-oracle-contracts-integration-fino-a.html" class="card-title">CVE-2026-62484 | Oracle Contracts Integration fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in Oracle Contracts Integration fino a 12.2.15. Risulta coinvolta una funzione sco...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#77</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-65-cve-2026-62483-oracle-project-contracts-fino-a-12-.html" class="card-title">CVE-2026-62483 | Oracle Project Contracts fino a 12.2.15 Internal Operations</a>
+      <p class="card-desc">In Oracle Project Contracts fino a 12.2.15 stata rilevata una vulnerabilità di livello problematico. Da questa vulnerabilità è interessato u...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#78</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-66-cve-2026-62482-oracle-public-sector-financials-fin.html" class="card-title">CVE-2026-62482 | Oracle Public Sector Financials fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello critico in Oracle Public Sector Financials fino a 12.2.15. É interessato una funzione sconosci...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#79</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-67-cve-2026-62480-oracle-public-sector-financials-fin.html" class="card-title">CVE-2026-62480 | Oracle Public Sector Financials fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in Oracle Public Sector Financials fino a 12.2.15. Riguarda una funzione sconosci...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#80</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-68-cve-2026-62470-oracle-self-service-human-resources.html" class="card-title">CVE-2026-62470 | Oracle Self-Service Human Resources fino a 12.2.15 Manager Self-Service escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Oracle Self-Service Human Resources fino a 12.2.15. Viene interessata un...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#81</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-69-cve-2026-62456-oracle-e-business-suite-fino-a-12-2.html" class="card-title">CVE-2026-62456 | Oracle E-Business Suite fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come critico in Oracle E-Business Suite fino a 12.2.15. Si considera coinvolta una funzione ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#82</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-70-cve-2026-62453-oracle-hrms-fino-a-12-2-15-internal.html" class="card-title">CVE-2026-62453 | Oracle HRMS fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in Oracle HRMS fino a 12.2.15. Risulta coinvolta una funzione sconosciuta del c...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#83</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-71-cve-2026-62451-oracle-work-in-process-fino-a-12-2-.html" class="card-title">CVE-2026-62451 | Oracle Work in Process fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in Oracle Work in Process fino a 12.2.15. Da questa vulnerabilità è interess...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#84</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-72-cve-2026-62447-oracle-trade-management-fino-a-12-2.html" class="card-title">CVE-2026-62447 | Oracle Trade Management fino a 12.2.15 Claim LOV escalationi di privilegi</a>
+      <p class="card-desc">Un punto di debole di livello critico è stato rilevato in Oracle Trade Management fino a 12.2.15. É interessato una funzione sconosciuta del...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#85</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-73-cve-2026-61338-oracle-contracts-integration-fino-a.html" class="card-title">CVE-2026-61338 | Oracle Contracts Integration fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">Un punto di criticita di livello critico è stato rilevato in Oracle Contracts Integration fino a 12.2.15. Riguarda una funzione sconosciuta ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#86</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-74-cve-2026-61334-oracle-price-protection-fino-a-12-2.html" class="card-title">CVE-2026-61334 | Oracle Price Protection fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">In Oracle Price Protection fino a 12.2.15 è stato trovato un punto critico di livello critico. Viene interessata una funzione sconosciuta ap...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#87</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-75-cve-2026-61335-oracle-product-workbench-fino-a-12-.html" class="card-title">CVE-2026-61335 | Oracle Product Workbench fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">In Oracle Product Workbench fino a 12.2.15 è stata rilevato un punto critico di livello critico. Si considera coinvolta una funzione sconosc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#88</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-76-cve-2026-61333-oracle-product-workbench-fino-a-12-.html" class="card-title">CVE-2026-61333 | Oracle Product Workbench fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">Un punto critico di livello critico è stato rilevato in Oracle Product Workbench fino a 12.2.15. Risulta coinvolta una funzione sconosciuta ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#89</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-77-cve-2026-61329-oracle-price-protection-fino-a-12-2.html" class="card-title">CVE-2026-61329 | Oracle Price Protection fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">In Oracle Price Protection fino a 12.2.15 stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato una fun...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#90</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-78-cve-2026-61328-oracle-cost-management-fino-a-12-2-.html" class="card-title">CVE-2026-61328 | Oracle Cost Management fino a 12.2.15 Cost Planning escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in Oracle Cost Management fino a 12.2.15. É interessato una funzione sconosciuta ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#91</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-79-cve-2026-61327-oracle-bills-of-material-fino-a-12-.html" class="card-title">CVE-2026-61327 | Oracle Bills of Material fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">Una vulnerabilità di livello critico è stata rilevata in Oracle Bills of Material fino a 12.2.15. Riguarda una funzione sconosciuta del comp...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#92</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-80-cve-2026-61325-oracle-advanced-benefits-12-2-15-in.html" class="card-title">CVE-2026-61325 | Oracle Advanced Benefits 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Oracle Advanced Benefits 12.2.15. Viene interessata una funzione sconosc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#93</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-81-cve-2026-61324-oracle-advanced-benefits-12-2-15-in.html" class="card-title">CVE-2026-61324 | Oracle Advanced Benefits 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Oracle Advanced Benefits 12.2.15. Si considera coinvolta una funzione s...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#94</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-82-cve-2026-62560-oracle-hrms-fino-a-12-2-15-internal.html" class="card-title">CVE-2026-62560 | Oracle HRMS fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Oracle HRMS fino a 12.2.15. Risulta coinvolta una funzione sconosciuta ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#95</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-83-cve-2026-62559-oracle-hrms-fino-a-12-2-15-internal.html" class="card-title">CVE-2026-62559 | Oracle HRMS fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in Oracle HRMS fino a 12.2.15. Da questa vulnerabilità è interessato un...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#96</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-84-cve-2026-62556-oracle-hrms-fino-a-12-2-15-internal.html" class="card-title">CVE-2026-62556 | Oracle HRMS fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in Oracle HRMS fino a 12.2.15. É interessato una funzione sconosciuta del compon...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#97</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-85-cve-2026-62546-oracle-applications-framework-fino-.html" class="card-title">CVE-2026-62546 | Oracle Applications Framework fino a 12.2.15 Web Utilities escalationi di privilegi</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Oracle Applications Framework fino a 12.2.15. Riguarda una funzione sconos...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#98</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-86-cve-2026-62534-oracle-applications-framework-fino-.html" class="card-title">CVE-2026-62534 | Oracle Applications Framework fino a 12.2.15 Web Utilities escalationi di privilegi</a>
+      <p class="card-desc">In Oracle Applications Framework fino a 12.2.15 è stato trovato un punto critico di livello critico. Viene interessata una funzione sconosci...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#99</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-87-cve-2026-62518-oracle-production-scheduling-fino-a.html" class="card-title">CVE-2026-62518 | Oracle Production Scheduling fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">In Oracle Production Scheduling fino a 12.2.15 è stata rilevato un punto critico di livello critico. Si considera coinvolta una funzione sco...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#100</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-88-cve-2026-62515-oracle-advanced-planning-command-ce.html" class="card-title">CVE-2026-62515 | Oracle Advanced Planning Command Center fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in Oracle Advanced Planning Command Center fino a 12.2.15. Risulta coinvolta una f...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#101</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-89-cve-2026-62514-oracle-process-manufacturing-regula.html" class="card-title">CVE-2026-62514 | Oracle Process Manufacturing Regulatory Management fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">In Oracle Process Manufacturing Regulatory Management fino a 12.2.15 stata rilevata una vulnerabilità di livello critico. Da questa vulnerab...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#102</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-90-cve-2026-62498-oracle-flow-manufacturing-fino-a-12.html" class="card-title">CVE-2026-62498 | Oracle Flow Manufacturing fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello critico in Oracle Flow Manufacturing fino a 12.2.15. É interessato una funzione sconosciuta de...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#103</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-91-cve-2026-62513-oracle-process-manufacturing-regula.html" class="card-title">CVE-2026-62513 | Oracle Process Manufacturing Regulatory Management fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">Una vulnerabilità di livello critico è stata rilevata in Oracle Process Manufacturing Regulatory Management fino a 12.2.15. Riguarda una fun...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#104</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-92-cve-2026-62496-oracle-yard-management-fino-a-12-2-.html" class="card-title">CVE-2026-62496 | Oracle Yard Management fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come critico in Oracle Yard Management fino a 12.2.15. Viene interessata una funzione sconosc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#105</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-93-cve-2026-62495-oracle-process-manufacturing-proces.html" class="card-title">CVE-2026-62495 | Oracle Process Manufacturing Process Execution 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come critico in Oracle Process Manufacturing Process Execution 12.2.15. Si considera coinvol...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#106</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-94-cve-2026-62493-oracle-purchasing-fino-a-12-2-15-in.html" class="card-title">CVE-2026-62493 | Oracle Purchasing fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in Oracle Purchasing fino a 12.2.15. Risulta coinvolta una funzione sconosciuta...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#107</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-95-cve-2026-62478-oracle-public-sector-financials-fin.html" class="card-title">CVE-2026-62478 | Oracle Public Sector Financials fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in Oracle Public Sector Financials fino a 12.2.15. Da questa vulnerabilità è...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#108</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-96-cve-2026-62476-oracle-public-sector-payroll-fino-a.html" class="card-title">CVE-2026-62476 | Oracle Public Sector Payroll fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">Un punto di debole di livello critico è stato rilevato in Oracle Public Sector Payroll fino a 12.2.15. É interessato una funzione sconosciut...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#109</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-97-cve-2026-62466-oracle-human-resources-fino-a-12-2-.html" class="card-title">CVE-2026-62466 | Oracle Human Resources fino a 12.2.15 Data Removal Tool escalationi di privilegi</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Oracle Human Resources fino a 12.2.15. Riguarda una funzione sconosciuta d...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#110</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-98-cve-2026-62464-oracle-payroll-fino-a-12-2-15-inter.html" class="card-title">CVE-2026-62464 | Oracle Payroll fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">In Oracle Payroll fino a 12.2.15 è stato trovato un punto critico di livello critico. Viene interessata una funzione sconosciuta appartenent...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#111</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-99-cve-2026-61337-oracle-lease-and-finance-management.html" class="card-title">CVE-2026-61337 | Oracle Lease and Finance Management fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">In Oracle Lease and Finance Management fino a 12.2.15 è stata rilevato un punto critico di livello critico. Si considera coinvolta una funzi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#112</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-100-cve-2026-61336-oracle-lease-and-finance-management.html" class="card-title">CVE-2026-61336 | Oracle Lease and Finance Management fino a 12.2.15 Internal Operations escalationi di privilegi</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in Oracle Lease and Finance Management fino a 12.2.15. Risulta coinvolta una funzi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#113</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-101-police-dismantle-kratos-phishing-kit-built-to-stea.html" class="card-title">Police Dismantle Kratos Phishing Kit Built to Steal Microsoft 365 Sessions and Bypass MFA</a>
+      <p class="card-desc">German and US law enforcement have taken down the core infrastructure of Kratos, described by German investigators as one of the world&#39;s mos...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#114</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-102-trojanized-newtonsoft-json-fork-hides-game-rigging.html" class="card-title">Trojanized Newtonsoft.Json Fork Hides Game-Rigging Code in a Working Library</a>
+      <p class="card-desc">Cybersecurity researchers have discovered a NuGet typosquat that&#39;s unlike the typical information-stealing malware distributed via package r...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#115</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-103-microsoft-azure-devops-mcp-flaw-lets-hidden-pr-com.html" class="card-title">Microsoft Azure DevOps MCP Flaw Lets Hidden PR Comments Hijack AI Review Agents</a>
+      <p class="card-desc">A single invisible comment in an Azure DevOps pull request can turn a reviewer&#39;s own AI coding agent against them, driving it into projects ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#116</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-104-openai-says-its-ai-models-escaped-sandbox-targeted.html" class="card-title">OpenAI Says Its AI Models Escaped Sandbox, Targeted Hugging Face to Cheat Benchmark</a>
+      <p class="card-desc">OpenAI on Tuesday said a combination of its artificial intelligence (AI) models, including GPT-5.6 Sol and an &quot;even more capable pre-release...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#117</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-105-apple-fixes-hide-my-email-bug-that-exposed-real-ad.html" class="card-title">Apple Fixes Hide My Email Bug That Exposed Real Addresses in Mail Logs</a>
+      <p class="card-desc">Apple has moved to address a security flaw in its Hide My Email service that enabled users&#39; real email addresses to be unmasked, effectively...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#118</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-107-google-launches-gemini-3-5-flash-cyber-ai-to-find-.html" class="card-title">Google Launches Gemini 3.5 Flash Cyber AI to Find and Fix Software Vulnerabilities</a>
+      <p class="card-desc">Google&#39;s DeepMind on Tuesday announced the release of Gemini 3.5 Flash Cyber, a specialized artificial intelligence (AI) model built atop 3....</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#119</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-111-open-source-android-ai-agents-could-let-invisible-.html" class="card-title">Open-Source Android AI Agents Could Let Invisible Screen Text Run Code on Host PCs</a>
+      <p class="card-desc">An Android app that can draw over other windows and write to shared storage can slip instructions to the AI agent driving that phone, in tex...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#120</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-112-n-day-is-becoming-n-hour-patching-faster-won-t-sav.html" class="card-title">N-day is Becoming N-Hour. Patching Faster Won&#39;t Save You.</a>
+      <p class="card-desc">Every patch is a confession. The moment a vendor ships a security fix, the diff between the old code and the new code tells anyone watching ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#121</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-113-new-bit2watt-attack-could-let-cloud-tenants-disrup.html" class="card-title">New Bit2Watt Attack Could Let Cloud Tenants Disrupt Power Grids Without an Exploit</a>
+      <p class="card-desc">A cloud tenant using nothing but ordinary GPU access can push a data center&#39;s power draw up and down fast enough to threaten the grid it run...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#122</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-114-microsoft-to-stop-exchange-2016-2019-security-upda.html" class="card-title">Microsoft to stop Exchange 2016 / 2019 security updates in October</a>
+      <p class="card-desc">Microsoft has reminded customers that it will stop shipping security updates for Exchange 2016 and 2019 through the Extended Security Update...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#123</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-115-chick-fil-a-discloses-data-breach-after-credential.html" class="card-title">Chick-fil-A discloses data breach after credential stuffing attacks</a>
+      <p class="card-desc">American fast food restaurant chain Chick-fil-A is notifying customers of a data breach after their accounts were hacked in a wave of recent...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#124</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-116-openai-says-its-ai-models-hacked-hugging-face-duri.html" class="card-title">OpenAI says its AI models hacked Hugging Face during testing</a>
+      <p class="card-desc">OpenAI says its AI models, including GPT‑5.6 Sol and a pre-release model, hacked into the Hugging Face artificial intelligence repository wh...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#125</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-117-police-dismantle-kratos-phishing-platform-arrest-d.html" class="card-title">Police dismantle Kratos phishing platform, arrest developer</a>
+      <p class="card-desc">Authorities in Germany and the U.S. dismantled the central infrastructure of Kratos, a phishing-as-a-service (PhaaS) platform with global re...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#126</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-118-fakegit-campaign-uses-7-600-github-repos-to-push-s.html" class="card-title">FakeGit campaign uses 7,600 GitHub repos to push SmartLoader malware</a>
+      <p class="card-desc">A large-scale operation dubbed &#39;FakeGit&#39; is pushing SmartLoader and StealC malware through 7,600 malicious GitHub repositories that accumula...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#127</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-120-anubis-ransomware-claims-coca-cola-fairlife-attack.html" class="card-title">Anubis ransomware claims Coca-Cola Fairlife attack, threatens data leak</a>
+      <p class="card-desc">The Anubis ransomware gang has claimed responsibility for the cyberattack on Coca-Cola&#39;s Fairlife dairy subsidiary, threatening to publish a...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#128</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-123-us-seizes-over-1-000-websites-in-fifa-world-cup-pi.html" class="card-title">US seizes over 1,000 websites in FIFA World Cup piracy crackdown</a>
+      <p class="card-desc">The U.S. Justice Department has seized more than 1,000 websites and blocked 1,970 domains used to stream FIFA World Cup 2026 matches without...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#129</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-124-ransomware-is-accelerating-but-it-s-not-because-of.html" class="card-title">Ransomware Is Accelerating, But It&#39;s Not Because of AI</a>
+      <p class="card-desc">Researchers pointed to fragmentation of the ransomware ecosystem, the emergence of new attackers, and expansion of attacks on less defended ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#130</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-126-hacker-turns-ai-jailbreaks-into-offensive-attack-p.html" class="card-title">Hacker Turns AI Jailbreaks Into Offensive Attack Platform</a>
+      <p class="card-desc">A Russian-speaking actor, &amp;quot;Trim,&amp;quot; dismantled publicly available frontier models and integrated them with offensive security tools.</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#131</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-127-choose-wisely-ai-generated-coding-risk-varies-a-lo.html" class="card-title">Choose Wisely: AI-Generated Coding Risk Varies, a Lot</a>
+      <p class="card-desc">AI-generated code introduces 15 vulnerabilities on average per codebase, but the actual risk depends on framework pairing more than the mode...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#132</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-129-fbi-warns-scammers-use-ai-deepfakes-and-fake-ic3-s.html" class="card-title">FBI Warns Scammers Use AI Deepfakes and Fake IC3 Sites to Re-Victimize Fraud Victims</a>
+      <p class="card-desc">The FBI has issued a new Public Service Announcement warning that cybercriminals are increasingly using AI-generated deepfakes and spoofed I...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#133</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-130-anonymous-researcher-dumps-204-0-day-exploit-files.html" class="card-title">Anonymous Researcher Dumps 204 0-Day Exploit Files Before Vendors Can Patch Them</a>
+      <p class="card-desc">An anonymous GitHub user has quietly assembled one of the most disruptive exploit collections of the year, dropping 204 zero‑day proof‑of‑co...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#134</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-131-azure-devops-mcp-flaw-lets-hidden-pr-comments-hija.html" class="card-title">Azure DevOps MCP Flaw Lets Hidden PR Comments Hijack AI Agents and Steal Data</a>
+      <p class="card-desc">A newly disclosed flaw in Microsoft&amp;#8217;s official Azure DevOps MCP server shows how an invisible comment in a pull request can silently h...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#135</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-132-spain-fines-23andme-2-4-million-over-security-fail.html" class="card-title">Spain Fines 23andMe €2.4 Million Over Security Failures Behind 6.9 Million-User Breach</a>
+      <p class="card-desc">Spain’s data protection authority has fined the genetic testing company 23andMe €2.4 million due to security failures linked to a data breac...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#136</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-133-hackers-abuse-compromised-outlook-accounts-to-stea.html" class="card-title">Hackers Abuse Compromised Outlook Accounts to Steal MFA-Protected Microsoft 365 Sessions</a>
+      <p class="card-desc">Attackers are quietly turning trusted Microsoft Outlook mailboxes into launchpads for stealing multi factor authenticated Microsoft 365 sess...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#137</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-134-russian-hacker-jailbreaks-claude-to-turn-into-an-a.html" class="card-title">Russian Hacker Jailbreaks Claude to Turn into an AI-Powered Penetration Testing Platform</a>
+      <p class="card-desc">A Russian-speaking threat actor known as &amp;#8220;Trim&amp;#8221; has reportedly transformed jailbroken frontier AI models into an automated penet...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#138</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-135-authorities-shut-down-phishing-empire-launching-15.html" class="card-title">Authorities Shut Down Phishing Empire Launching 15,000 Attacks Every Month</a>
+      <p class="card-desc">Authorities dismantled Kratos, a major phishing-as-a-service operation behind around 15,000 monthly phishing campaigns, shutting down a glob...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#139</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-136-yubikey-5-8-released-with-secure-enterprise-workfl.html" class="card-title">YubiKey 5.8 Released With Secure Enterprise Workflows and AI-driven Approvals</a>
+      <p class="card-desc">Yubico has announced the release of YubiKey 5.8, a firmware update that enhances the functionality of hardware-backed passkeys beyond secure...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#140</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-137-golangghost-steals-chrome-secrets-from-macos-keych.html" class="card-title">GolangGhost Steals Chrome Secrets From macOS Keychain and Hijacks MetaMask Permissions</a>
+      <p class="card-desc">A new malware campaign is targeting cryptocurrency and Web3 professionals through fake job interviews. The operation delivers GolangGhost, a...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#141</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-138-endpoint-security-firm-glow-launches-with-180m-in-.html" class="card-title">Endpoint Security Firm Glow Launches With $180M in Funding at $1.2B Valuation</a>
+      <p class="card-desc">Using AI, the startup provides adaptive prevention through environment mapping, risk analysis, and automated policy enforcement. The post En...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#142</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-140-ransomware-group-threatening-to-leak-data-stolen-f.html" class="card-title">Ransomware Group Threatening to Leak Data Stolen From Coca-Cola’s Fairlife</a>
+      <p class="card-desc">The Anubis ransomware group claims to have stolen 1 TB of confidential data from the Coca-Cola subsidiary. The post Ransomware Group Threate...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#143</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-141-openai-says-its-ai-models-broke-loose-and-hacked-h.html" class="card-title">OpenAI Says Its AI Models Broke Loose and Hacked Hugging Face</a>
+      <p class="card-desc">OpenAI says its AI models went rogue, as CISOS call the incident a watershed moment, warning that autonomous AI threat models have officiall...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#144</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-143-cisco-launches-low-cost-ai-models-for-source-code-.html" class="card-title">Cisco Launches Low-Cost AI Models for Source Code Security</a>
+      <p class="card-desc">The open-weight Antares models are designed to pinpoint known vulnerabilities in codebases faster and at a fraction of the cost of larger AI...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#145</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-144-empirical-security-raises-25-million-in-series-a-f.html" class="card-title">Empirical Security Raises $25 Million in Series A Funding</a>
+      <p class="card-desc">The startup will use the investment to accelerate the development of its threat prediction and discovery products. The post Empirical Securi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#146</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-146-new-hollowgraph-malware-abuses-microsoft-365-calen.html" class="card-title">New HollowGraph Malware Abuses Microsoft 365 Calendar for C&amp;C Communication</a>
+      <p class="card-desc">Part of a larger toolkit, HollowGraph uses a compromised 365 account’s calendar as a two-way dead-drop. The post New HollowGraph Malware Abu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#147</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-147-ciso-conversations-andreas-gaetje-from-economics-t.html" class="card-title">CISO Conversations: Andreas Gaetje – From Economics to CISO at Körber AG</a>
+      <p class="card-desc">Gaetje’s story shows that you don’t need to be a ‘deep bit-crawler’ to become a Chief Information Security Officer. The post CISO Conversati...</p>
+    </div>
+</div>
+
+<div class="no-results" id="no-results">
+  <p>Nessun risultato trovato</p>
+</div>
+
+<footer class="footer">
+  <p>Cyber Security News Dashboard - Generato automaticamente senza amore o sentimento</p>
+  <p>Creato (con n8n e un pochino di javascript scritto da un LLM) da: <a href="https://www.linkedin.com/in/mocciaalessandro" target="_blank">Alessandro</a></p>
+</footer>
+
+<script>
+(function() {
+  const cards = document.querySelectorAll('.card');
+  const buttons = document.querySelectorAll('[data-filter]');
+  const searchInput = document.getElementById('search');
+  const noResults = document.getElementById('no-results');
+  
+  let currentFilter = 'all';
+  let searchTerm = '';
+
+  const filterCards = () => {
+    let visibleCount = 0;
+    
+    cards.forEach(card => {
+      const matchesFilter = currentFilter === 'all' || card.dataset.severity === currentFilter;
+      const matchesSearch = !searchTerm || card.textContent.toLowerCase().includes(searchTerm);
+      const isVisible = matchesFilter && matchesSearch;
+      
+      card.style.display = isVisible ? 'block' : 'none';
+      if (isVisible) visibleCount++;
+    });
+    
+    noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+  };
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      filterCards();
+    });
+  });
+
+  let debounceTimer;
+  searchInput.addEventListener('input', (e) => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      searchTerm = e.target.value.toLowerCase();
+      filterCards();
+    }, 150);
+  });
+})();
+</script>
+
+</body>
+</html>
