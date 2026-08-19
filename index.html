@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyber Security News Dashboard</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --primary: #00ff9f;
+      --primary-dim: #00cc7a;
+      --card-bg: #111;
+      --border: rgba(0, 255, 159, 0.2);
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--primary);
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.5;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      font-size: clamp(1.2rem, 4vw, 2rem);
+      text-shadow: 0 0 20px var(--primary);
+      margin: 0 0 10px 0;
+    }
+    .header time {
+      font-size: 0.85rem;
+      opacity: 0.7;
+    }
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 25px;
+    }
+    .stat {
+      padding: 8px 15px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      background: var(--card-bg);
+    }
+    .stat.critical { border-color: #ff4444; }
+    .stat.high { border-color: #ff8c00; }
+    .stat.medium { border-color: #ffd700; }
+    .stat.low { border-color: var(--primary-dim); }
+    .controls {
+      max-width: 900px;
+      margin: 0 auto 25px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .search-wrapper {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+    .search-wrapper::before {
+      content: '🔍';
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+    }
+    input {
+      width: 100%;
+      padding: 10px 10px 10px 35px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--primary);
+      font-family: inherit;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .filter-buttons {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 10px 15px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--primary);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    button:hover, button.active {
+      background: var(--primary);
+      color: var(--bg);
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      display: grid;
+      gap: 15px;
+    }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 15px;
+      background: var(--card-bg);
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .index {
+      font-size: 12px;
+      opacity: 0.6;
+    }
+    .badge {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    .critical { background: #ff4444; color: #fff; }
+    .high { background: #ff8c00; color: #000; }
+    .medium { background: #ffd700; color: #000; }
+    .low { background: var(--primary-dim); color: #000; }
+    .card-title {
+      display: block;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: bold;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .card-title:hover { text-decoration: underline; }
+    .card-desc {
+      font-size: 12px;
+      color: var(--primary-dim);
+      margin: 0;
+    }
+    .no-results {
+      text-align: center;
+      padding: 40px;
+      opacity: 0.6;
+      display: none;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      opacity: 0.6;
+      text-align: center;
+    }
+    @media (max-width: 600px) {
+      .controls { flex-direction: column; }
+      .filter-buttons { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🛡️ CYBER SECURITY NEWS DASHBOARD</h1>
+  <time datetime="2026-08-19T00:01:18.429Z">19/08/2026, 00:01</time>
+</div>
+
+<div class="stats">
+  <div class="stat">📊 Totale: <strong>52</strong></div>
+  <div class="stat critical">🔴 Critical: <strong>4</strong></div>
+  <div class="stat high">🟠 High: <strong>0</strong></div>
+  <div class="stat medium">🟡 Medium: <strong>2</strong></div>
+  <div class="stat low">🟢 Low: <strong>46</strong></div>
+</div>
+
+<div class="controls">
+  <div class="search-wrapper">
+    <input type="search" id="search" placeholder="Cerca nelle notizie..." aria-label="Cerca">
+  </div>
+  <div class="filter-buttons">
+    <button class="active" data-filter="all">Tutte</button>
+    <button data-filter="critical">Critical</button>
+    <button data-filter="high">High</button>
+    <button data-filter="medium">Medium</button>
+    <button data-filter="low">Low</button>
+  </div>
+</div>
+
+<div class="container" id="cards">
+  
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#01</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-14-attackers-exploit-mlflow-ssrf-flaw-to-steal-cloud-.html" class="card-title">Attackers Exploit MLflow SSRF Flaw to Steal Cloud Credentials and Secrets</a>
+      <p class="card-desc">Two critical vulnerabilities impacting MLflow, an open-source artificial intelligence (AI) platform, and FUXA, an open-source, web-based SCA...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#02</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-21-cisa-flags-actively-exploited-ray-flaw-that-can-tr.html" class="card-title">CISA Flags Actively Exploited Ray Flaw That Can Trigger Browser-Based RCE</a>
+      <p class="card-desc">The U.S. Cybersecurity and Infrastructure Security Agency (CISA) on Monday added a critical flaw impacting Ray to its Known Exploited Vulner...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#03</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-26-cisa-windows-task-host-flaw-now-exploited-by-ranso.html" class="card-title">CISA: Windows Task Host flaw now exploited by ransomware gangs</a>
+      <p class="card-desc">The U.S. Cybersecurity and Infrastructure Security Agency (CISA) has confirmed that ransomware gangs are also exploiting a high-severity Win...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#04</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-51-gitlab-patches-critical-code-injection-vulnerabili.html" class="card-title">GitLab Patches Critical Code Injection Vulnerability</a>
+      <p class="card-desc">The security defect allows unauthenticated attackers to modify or delete user data and public projects. The post GitLab Patches Critical Cod...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#05</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-3-cve-2026-15371-rapid7-velociraptor-fino-a-0-77-1-c.html" class="card-title">CVE-2026-15371 | Rapid7 Velociraptor fino a 0.77.1 cross site scripting</a>
+      <p class="card-desc">In Rapid7 Velociraptor fino a 0.77.1 stata rilevata una vulnerabilità di livello problematico. Da questa vulnerabilità è interessato una fun...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#06</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-6-cve-2026-75091-mdmag-quill-forms-plugin-fino-a-5-7.html" class="card-title">CVE-2026-75091 | mdmag Quill Forms Plugin fino a 5.7.1 su WordPress cross site scripting</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in mdmag Quill Forms Plugin fino a 5.7.1 su WordPress. Viene interessata un...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#07</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-1-cve-2026-18929-carbone-fino-a-3-8-1-4-26-2-5-4-3-z.html" class="card-title">CVE-2026-18929 | Carbone fino a 3.8.1/4.26.2/5.4.3 Zip Decompression negazione del servizio</a>
+      <p class="card-desc">In Carbone fino a 3.8.1/4.26.2/5.4.3 è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzione sconosci...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#08</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-2-cve-2026-43971-ninenines-cowlib-cow-link-cow-link-.html" class="card-title">CVE-2026-43971 | ninenines cowlib cow_link cow_link:link escalationi di privilegi</a>
+      <p class="card-desc">Un punto critico di livello critico è stato rilevato in ninenines cowlib. Risulta coinvolta una funzione sconosciuta del componente cow_link...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#09</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-4-cve-2026-75784-trendnet-tew-wlc100-1v2-07b01-http-.html" class="card-title">CVE-2026-75784 | TRENDnet TEW-WLC100 1v2.07b01 HTTP Header /usr/nginx/sbin/nginx FUN_0040da4c Server buffer overflow</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello estremamente critico in TRENDnet TEW-WLC100 1v2.07b01. É interessato la funzione FUN_0040da4c ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#10</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-5-cve-2026-75783-trendnet-tew-wlc100p-12-07b01-dhcp-.html" class="card-title">CVE-2026-75783 | TRENDnet TEW-WLC100P 12.07b01 DHCP blobmsg /sbin/netifd buffer overflow</a>
+      <p class="card-desc">Una vulnerabilità di livello estremamente critico è stata rilevata in TRENDnet TEW-WLC100P 12.07b01. Riguarda una funzione sconosciuta del f...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#11</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-7-cve-2026-15748-wpmu-dev-forminator-forms-plugin-fi.html" class="card-title">CVE-2026-15748 | WPMU DEV Forminator Forms Plugin fino a 1.56.1 su WordPress handle_file_upload escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come critico in WPMU DEV Forminator Forms Plugin fino a 1.56.1 su WordPress. Si considera co...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#12</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-8-cve-2026-75778-code-projects-task-management-syste.html" class="card-title">CVE-2026-75778 | code-projects Task Management System 1.0 Login Form /index.php select_with_multiple_condition email iniezione SQL</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in code-projects Task Management System 1.0. Risulta coinvolta una funzione sco...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#13</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-9-cve-2026-75774-karakeep-app-karakeep-fino-a-0-32-0.html" class="card-title">CVE-2026-75774 | karakeep-app karakeep fino a 0.32.0 OAuth Sign-In apps/web/server/auth.ts autenticazione debole (Issue 2920)</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in karakeep-app karakeep fino a 0.32.0. Da questa vulnerabilità è inter...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#14</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-10-cve-2026-75773-karakeep-app-karakeep-fino-a-0-32-0.html" class="card-title">CVE-2026-75773 | karakeep-app karakeep fino a 0.32.0 Login Endpoint apps/web/server/auth.ts authorize rivelazione di informazioni (Issue 2919)</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in karakeep-app karakeep fino a 0.32.0. É interessato la funzione authorize del ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#15</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-11-cve-2026-11801-gwin-wpadverts-plugin-fino-a-2-3-2-.html" class="card-title">CVE-2026-11801 | gwin WPAdverts Plugin fino a 2.3.2 su WordPress Classifieds Types REST Endpoint escalationi di privilegi</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in gwin WPAdverts Plugin fino a 2.3.2. Riguarda una funzione sconosciuta del ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#16</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-12-cve-2026-44950-libxfont2-font-server-client-buffer.html" class="card-title">CVE-2026-44950 | libXfont2 Font Server Client buffer overflow</a>
+      <p class="card-desc">In libXfont2 è stato trovato un punto critico di livello estremamente critico. Viene interessata una funzione sconosciuta appartenente al co...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#17</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-13-microsoft-copilot-personal-flaws-could-let-one-cli.html" class="card-title">Microsoft Copilot Personal Flaws Could Let One Click Exfiltrate Data From Connected Apps</a>
+      <p class="card-desc">Varonis Threat Labs has disclosed three vulnerabilities in Microsoft Copilot Personal that it said could allow a single click on a crafted l...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#18</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-15-ransom-busters-claims-it-hacked-ransomware-servers.html" class="card-title">Ransom Busters Claims It Hacked Ransomware Servers, Asks Victims for Up to $60,000</a>
+      <p class="card-desc">A ransomware affiliate calling itself Ransom Busters has been spotted proactively sending emails to victim organizations and claims to delet...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#19</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-16-ai-mind-viruses-can-spread-between-agents-through-.html" class="card-title">AI &quot;Mind Viruses&quot; Can Spread Between Agents Through Persistent Prompt Files</a>
+      <p class="card-desc">Security researchers at Anthropic and Switzerland&#39;s EPFL have demonstrated that self-propagating payloads can spread from one artificial int...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#20</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-17-twinloot-abuses-sharepoint-and-teams-to-steal-cred.html" class="card-title">TWINLOOT Abuses SharePoint and Teams to Steal Credentials and Move Across Networks</a>
+      <p class="card-desc">Cybersecurity researchers have disclosed details of a previously undocumented Python implant framework dubbed TWINLOOT. &quot;TWINLOOT is a modul...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#21</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-18-one-attacker-has-scraped-both-salesforce-and-servi.html" class="card-title">One Attacker Has Scraped Both Salesforce and ServiceNow Portals Since 2025</a>
+      <p class="card-desc">A single piece of infrastructure has been pulling records out of Salesforce and ServiceNow customer portals across multiple industries for m...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#22</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-19-16-typosquatted-rubygems-packages-steal-browser-cr.html" class="card-title">16 Typosquatted RubyGems Packages Steal Browser Credentials and Crypto Wallets</a>
+      <p class="card-desc">Cybersecurity researchers have flagged a new typosquatting campaign targeting RubyGems users with a Windows-based information stealer. OpenS...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#23</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-20-safepal-hardware-wallet-maker-says-flaw-exposed-da.html" class="card-title">SafePal Hardware Wallet Maker Says Flaw Exposed Data of Nearly 40,000 Customers</a>
+      <p class="card-desc">SafePal has disclosed that an authorization flaw in an order-tracking plug-in exposed the names, email addresses, shipping addresses, phone ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#24</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-22-comcast-turns-your-xfinity-wifi-into-a-home-motion.html" class="card-title">Comcast turns your Xfinity WiFi into a home motion detector</a>
+      <p class="card-desc">Comcast is promoting WiFi-based motion detection as a part of its new Xfinity Shield home protection platform, allowing routers and wireless...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#25</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-23-clop-created-custom-web-shell-for-windchill-data-t.html" class="card-title">Clop created custom web shell for Windchill data theft attacks</a>
+      <p class="card-desc">A custom Java web shell likely linked to the Clop ransomware gang was designed specifically for PTC Windchill and FlexPLM servers, with buil...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#26</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-24-your-controls-block-known-attacks-what-about-the-b.html" class="card-title">Your Controls Block Known Attacks. What About the Behavior?</a>
+      <p class="card-desc">Security controls can block a familiar attack method while missing quieter ways to achieve the same objective. Picus Security&#39;s Blue Report ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#27</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-25-microsoft-tests-faster-windows-file-explorer-new-c.html" class="card-title">Microsoft tests faster Windows File Explorer, new context menu</a>
+      <p class="card-desc">Microsoft has started testing a faster File Explorer and a less cluttered and more customizable context menu in Windows 11 preview builds ro...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#28</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-27-microsoft-confirms-outage-affecting-search-in-micr.html" class="card-title">Microsoft confirms outage affecting search in Microsoft 365 apps</a>
+      <p class="card-desc">Microsoft says some users are experiencing issues searching in Microsoft 365 apps, including Outlook on the web, Outlook desktop, SharePoint...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#29</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-28-microsoft-starts-removing-wmic-tool-used-by-cyberc.html" class="card-title">Microsoft starts removing WMIC tool used by cybercriminals</a>
+      <p class="card-desc">Microsoft announced that it removed the Windows Management Instrumentation Command-line (WMIC) tool from Windows 11 24H2 and 25H2, as well a...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#30</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-29-critical-gitlab-zero-click-flaw-poses-mitigation-c.html" class="card-title">Critical GitLab Zero-Click Flaw Poses Mitigation Challenges</a>
+      <p class="card-desc">A lack of technical details could make it hard for organizations running self-managed GitLab versions to detect potential exploitation of CV...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#31</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-30-cosnitch-attack-tricked-copilot-into-mapping-out-a.html" class="card-title">&#39;CoSnitch&#39; Attack Tricked Copilot into Mapping Out Architecture</a>
+      <p class="card-desc">Researchers discovered a &amp;quot;meta-hacking&amp;quot; technique that can manipulate the AI service into revealing its own security weaknesses.</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#32</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-31-cisos-break-their-silence-in-declassified-docuseri.html" class="card-title">CISOs Break Their Silence in &#39;Declassified&#39; Docuseries</a>
+      <p class="card-desc">Million-dollar heists, divorce, and career-ending burnout are all stories told in the latest docuseries revealing a behind-the-scenes look a...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#33</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-32-silent-twinloot-cyber-threat-operates-entirely-fro.html" class="card-title">Silent &#39;TwinLoot&#39; Cyber Threat Operates Entirely From Microsoft&#39;s Cloud</a>
+      <p class="card-desc">The Python-based malware framework takes living-off-the-land tactics to a new heights of stealth, with a modular implant that steals credent...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#34</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-33-ransom-busters-ransomware-actor-poses-as-incident-.html" class="card-title">&#39;Ransom Busters&#39;: Ransomware Actor Poses as Incident-Recovery Service</a>
+      <p class="card-desc">A ransomware affiliate appears to be sidling up to victims with offers of aid, masking its true intention of diverting ransom payments.</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#35</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-34-cisa-warns-medusa-ransomware-hackers-steal-data-ki.html" class="card-title">CISA Warns Medusa Ransomware Hackers Steal Data, Kill Security Tools, and Encrypt Entire Networks</a>
+      <p class="card-desc">The Cybersecurity and Infrastructure Security Agency (CISA), the Federal Bureau of Investigation (FBI), and the U.S. Department of Health an...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#36</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-35-french-tax-authority-data-breach-exposes-600-000-u.html" class="card-title">French Tax Authority Data Breach Exposes 600,000+ Users’ Personal Tax-Related Data</a>
+      <p class="card-desc">France’s tax authority has confirmed a data breach affecting approximately 678,000 individuals and businesses after threat actors gained una...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#37</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-36-critical-mlflow-ssrf-vulnerability-exploited-by-ha.html" class="card-title">Critical MLflow SSRF Vulnerability Exploited by Hackers in the Wild</a>
+      <p class="card-desc">Threat actors are actively exploiting a critical, unauthenticated server-side request forgery (SSRF) vulnerability in MLflow, the popular op...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#38</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-37-hackers-hijack-thousands-of-wordpress-sites-to-use.html" class="card-title">Hackers Hijack Thousands of WordPress Sites to Use as C2 Servers for StopAndProtect Malware</a>
+      <p class="card-desc">A newly uncovered malware operation dubbed StopAndProtect is transforming thousands of hacked WordPress websites into a sprawling criminal c...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#39</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-38-microsoft-365-search-outage-disrupts-sharepoint-on.html" class="card-title">Microsoft 365 Search Outage Disrupts SharePoint, OneDrive, and Outlook Users Worldwide</a>
+      <p class="card-desc">Microsoft is actively managing a service disruption that has left a subset of enterprise users unable to search for content across SharePoin...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#40</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-39-anthropic-launches-new-design-skill-for-claude-cod.html" class="card-title">Anthropic Launches New /design Skill for Claude Code UI Workflows</a>
+      <p class="card-desc">Anthropic has introduced a new /design skill for Claude Code, expanding its developer-focused AI platform into user interface design workflo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#41</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-40-projextor-shows-how-malware-can-hide-behind-truste.html" class="card-title">Projextor Shows How Malware Can Hide Behind Trusted Electron Executables</a>
+      <p class="card-desc">Projextor is a malware campaign that turns ordinary-looking desktop tools into a doorway for hidden code. Its operators package it inside wo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#42</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-41-btmob-fraud-as-a-service-platform-uses-1-400-live-.html" class="card-title">BTMob Fraud-as-a-Service Platform Uses 1,400 Live Servers to Power Android Device Takeovers</a>
+      <p class="card-desc">BTMob is an Android banking malware platform built to turn phones into tools for fraud. It reaches victims through fake apps, cloned downloa...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#43</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-42-geekom-mini-pc-realtek-lan-driver-package-found-in.html" class="card-title">GEEKOM Mini PC Realtek LAN Driver Package Found Infected With Asruex Trojan</a>
+      <p class="card-desc">A network driver download is meant to get a computer online. In this case, it became a potential malware route after a Realtek LAN driver pa...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#44</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-43-jwr-phishing-framework-uses-real-time-websocket-co.html" class="card-title">JWR Phishing Framework Uses Real-Time WebSocket Control and AES Encryption to Steal Banking Credentials</a>
+      <p class="card-desc">JWR is a phishing framework built for live fraud. It turns a fake payment or bank page into a live channel that lets criminals watch details...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#45</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-44-webinar-today-rethinking-cyber-defense-for-ai-spee.html" class="card-title">Webinar Today: Rethinking Cyber Defense for AI-Speed Attacks</a>
+      <p class="card-desc">Join the live webinar as we explore if detection-first security operations can keep pace with AI, or if it’s time to rethink prevention as t...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#46</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-45-ciso-conversations-nico-waisman-from-self-taught-h.html" class="card-title">CISO Conversations: Nico Waisman – From Self-Taught Hacker to AI-Driven Offensive Security at XBOW</a>
+      <p class="card-desc">With no formal training and no career plan, Waisman built a path from Argentina&#39;s early hacking scene to leading security at an AI-powered o...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#47</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-46-ai-driven-vulnerability-surge-breaks-the-tradition.html" class="card-title">AI-Driven Vulnerability Surge Breaks the Traditional Patching Model</a>
+      <p class="card-desc">Rapid7 warns that traditional patch cycles cannot keep pace with soaring vulnerability disclosures and faster exploitation, forcing defender...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#48</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-47-xpander-raises-7-5-million-for-ai-management-and-g.html" class="card-title">Xpander Raises $7.5 Million for AI Management and Governance</a>
+      <p class="card-desc">Xpander’s platform uses a universal agent harness that executes AI agents as portable workloads and securely renders interfaces on demand. T...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#49</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-48-fortinet-acquires-ai-security-company-virtue-ai.html" class="card-title">Fortinet Acquires AI Security Company Virtue AI</a>
+      <p class="card-desc">Fortinet will use Virtue AI technology to enhance its AI security portfolio, including for AI models, applications, and agentic systems. The...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#50</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-49-300-000-wordpress-sites-potentially-exposed-to-hac.html" class="card-title">300,000 WordPress Sites Potentially Exposed to Hacking Due to Form Plugin Flaw</a>
+      <p class="card-desc">Tracked as CVE-2026-15748, the arbitrary file upload bug allows unauthenticated attackers to upload executable files. The post 300,000 WordP...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#51</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-50-heights-finance-data-breach-impacts-at-least-1-2-m.html" class="card-title">Heights Finance Data Breach Impacts at Least 1.2 Million Individuals</a>
+      <p class="card-desc">Hackers stole names, addresses, phone numbers, Social Security numbers, and financial information from a third-party platform. The post Heig...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#52</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-52-dozens-of-webkit-vulnerabilities-patched-with-fres.html" class="card-title">Dozens of WebKit Vulnerabilities Patched With Fresh macOS, iOS Security Updates</a>
+      <p class="card-desc">The bugs could be exploited to crash Safari, corrupt memory, leak sensitive data, escape the sandbox, and exfiltrate data. The post Dozens o...</p>
+    </div>
+</div>
+
+<div class="no-results" id="no-results">
+  <p>Nessun risultato trovato</p>
+</div>
+
+<footer class="footer">
+  <p>Cyber Security News Dashboard - Generato automaticamente senza amore o sentimento</p>
+  <p>Creato (con n8n e un pochino di javascript scritto da un LLM) da: <a href="https://www.linkedin.com/in/mocciaalessandro" target="_blank">Alessandro</a></p>
+</footer>
+
+<script>
+(function() {
+  const cards = document.querySelectorAll('.card');
+  const buttons = document.querySelectorAll('[data-filter]');
+  const searchInput = document.getElementById('search');
+  const noResults = document.getElementById('no-results');
+  
+  let currentFilter = 'all';
+  let searchTerm = '';
+
+  const filterCards = () => {
+    let visibleCount = 0;
+    
+    cards.forEach(card => {
+      const matchesFilter = currentFilter === 'all' || card.dataset.severity === currentFilter;
+      const matchesSearch = !searchTerm || card.textContent.toLowerCase().includes(searchTerm);
+      const isVisible = matchesFilter && matchesSearch;
+      
+      card.style.display = isVisible ? 'block' : 'none';
+      if (isVisible) visibleCount++;
+    });
+    
+    noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+  };
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      filterCards();
+    });
+  });
+
+  let debounceTimer;
+  searchInput.addEventListener('input', (e) => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      searchTerm = e.target.value.toLowerCase();
+      filterCards();
+    }, 150);
+  });
+})();
+</script>
+
+</body>
+</html>
