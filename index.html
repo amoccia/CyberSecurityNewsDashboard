@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyber Security News Dashboard</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --primary: #00ff9f;
+      --primary-dim: #00cc7a;
+      --card-bg: #111;
+      --border: rgba(0, 255, 159, 0.2);
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--primary);
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.5;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      font-size: clamp(1.2rem, 4vw, 2rem);
+      text-shadow: 0 0 20px var(--primary);
+      margin: 0 0 10px 0;
+    }
+    .header time {
+      font-size: 0.85rem;
+      opacity: 0.7;
+    }
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 25px;
+    }
+    .stat {
+      padding: 8px 15px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      background: var(--card-bg);
+    }
+    .stat.critical { border-color: #ff4444; }
+    .stat.high { border-color: #ff8c00; }
+    .stat.medium { border-color: #ffd700; }
+    .stat.low { border-color: var(--primary-dim); }
+    .controls {
+      max-width: 900px;
+      margin: 0 auto 25px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .search-wrapper {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+    .search-wrapper::before {
+      content: '🔍';
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+    }
+    input {
+      width: 100%;
+      padding: 10px 10px 10px 35px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--primary);
+      font-family: inherit;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .filter-buttons {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 10px 15px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--primary);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    button:hover, button.active {
+      background: var(--primary);
+      color: var(--bg);
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      display: grid;
+      gap: 15px;
+    }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 15px;
+      background: var(--card-bg);
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .index {
+      font-size: 12px;
+      opacity: 0.6;
+    }
+    .badge {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    .critical { background: #ff4444; color: #fff; }
+    .high { background: #ff8c00; color: #000; }
+    .medium { background: #ffd700; color: #000; }
+    .low { background: var(--primary-dim); color: #000; }
+    .card-title {
+      display: block;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: bold;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .card-title:hover { text-decoration: underline; }
+    .card-desc {
+      font-size: 12px;
+      color: var(--primary-dim);
+      margin: 0;
+    }
+    .no-results {
+      text-align: center;
+      padding: 40px;
+      opacity: 0.6;
+      display: none;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      opacity: 0.6;
+      text-align: center;
+    }
+    @media (max-width: 600px) {
+      .controls { flex-direction: column; }
+      .filter-buttons { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🛡️ CYBER SECURITY NEWS DASHBOARD</h1>
+  <time datetime="2026-09-04T14:03:05.386Z">04/09/2026, 14:03</time>
+</div>
+
+<div class="stats">
+  <div class="stat">📊 Totale: <strong>143</strong></div>
+  <div class="stat critical">🔴 Critical: <strong>10</strong></div>
+  <div class="stat high">🟠 High: <strong>1</strong></div>
+  <div class="stat medium">🟡 Medium: <strong>14</strong></div>
+  <div class="stat low">🟢 Low: <strong>118</strong></div>
+</div>
+
+<div class="controls">
+  <div class="search-wrapper">
+    <input type="search" id="search" placeholder="Cerca nelle notizie..." aria-label="Cerca">
+  </div>
+  <div class="filter-buttons">
+    <button class="active" data-filter="all">Tutte</button>
+    <button data-filter="critical">Critical</button>
+    <button data-filter="high">High</button>
+    <button data-filter="medium">Medium</button>
+    <button data-filter="low">Low</button>
+  </div>
+</div>
+
+<div class="container" id="cards">
+  
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#01</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-101-over-440-000-exploit-attempts-target-super-forms-a.html" class="card-title">Over 440,000 Exploit Attempts Target Super Forms and Elementor Pro RCE Flaws</a>
+      <p class="card-desc">Threat actors are exploiting two critical security flaws in WordPress plugins Super Forms and Elementor Pro, according to findings from Word...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#02</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-104-gpt-6-astra-scores-100-on-exploitbench-as-openai-b.html" class="card-title">GPT-6 Astra Scores 100% on ExploitBench as OpenAI Blocks PoC Exploit Requests</a>
+      <p class="card-desc">OpenAI on Thursday officially unveiled GPT‑6 Astra, which it described as the &quot;world&#39;s most intelligent and aligned model.&quot; The development ...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#03</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-106-critical-cisco-nexus-9000-flaw-lets-unauthenticate.html" class="card-title">Critical Cisco Nexus 9000 Flaw Lets Unauthenticated Remote Attackers Run Code as Root</a>
+      <p class="card-desc">Cisco has released patches to address a critical security flaw affecting 10 Silicon One-based Nexus 9000 switches that could allow an unauth...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#04</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-110-new-crowdstrike-falconflank-zero-day-grants-system.html" class="card-title">New CrowdStrike &#39;FalconFlank&#39; zero-day grants SYSTEM privileges</a>
+      <p class="card-desc">An anonymous security researcher who uses the &quot;Nightmare Eclipse&quot; handle released a CrowdStrike Falcon zero-day exploit named &quot;FalconFlank&quot; ...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#05</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-112-google-warns-of-new-chrome-zero-day-flaw-exploited.html" class="card-title">Google warns of new Chrome zero-day flaw exploited in attacks</a>
+      <p class="card-desc">Google has updated the Chrome browser to address an actively exploited high-severity zero-day flaw in the V8 engine and 11 other vulnerabili...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#06</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-115-hpe-patches-critical-arubaos-cx-remote-code-execut.html" class="card-title">HPE patches critical ArubaOS-CX remote code execution flaw</a>
+      <p class="card-desc">Hewlett Packard Enterprise (HPE) has patched a critical vulnerability in the ArubaOS-CX network operating system that could lead to remote c...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#07</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-119-critical-elementor-pro-flaw-exploited-to-take-over.html" class="card-title">Critical Elementor Pro flaw exploited to take over WordPress sites</a>
+      <p class="card-desc">A recently patched critical vulnerability (CVE-2026-32475) in the Elementor Pro plugin for WordPress is being exploited in attacks that deli...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#08</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-136-sangoma-switchvox-vulnerabilities-exploited-in-the.html" class="card-title">Sangoma Switchvox Vulnerabilities Exploited in the Wild</a>
+      <p class="card-desc">Tracked as CVE-2026-9586, the unauthenticated SQL injection flaw can be exploited remotely for arbitrary code execution. The post Sangoma Sw...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#09</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-139-vmware-workstation-and-fusion-updates-patch-critic.html" class="card-title">VMware Workstation and Fusion Updates Patch Critical Vulnerability</a>
+      <p class="card-desc">The flaws could allow attackers with administrative access to a virtual machine to execute code on the host system. The post VMware Workstat...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#10</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-140-google-patches-6th-chrome-zero-day-of-2026.html" class="card-title">Google Patches 6th Chrome Zero-Day of 2026</a>
+      <p class="card-desc">Google’s Chrome 152 security update resolves 12 vulnerabilities, including a high-severity type confusion flaw in the V8 engine. The post Go...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#11</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-103-google-releases-chrome-update-to-patch-actively-ex.html" class="card-title">Google Releases Chrome Update to Patch Actively Exploited V8 Zero-Day</a>
+      <p class="card-desc">Google on Thursday released security updates to patch 12 vulnerabilities, including one that has come under active exploitation in the wild....</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#12</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-14-cve-2026-18957-menulux-portal-cross-site-scripting.html" class="card-title">CVE-2026-18957 | Menulux Portal cross site scripting (ID 20260903211448)</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Menulux Portal. Risulta coinvolta una funzione sconosciuta. La manipola...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#13</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-17-cve-2026-85601-getgrav-grav-fino-a-2-0-19-markdown.html" class="card-title">CVE-2026-85601 | Getgrav Grav fino a 2.0.19 MarkdownEditor/MarkdownModal marked.parse cross site scripting</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Getgrav Grav fino a 2.0.19. Riguarda la funzione marked.parse del componen...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#14</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-18-cve-2026-85599-getgrav-grav-fino-a-6-2-4-shortcode.html" class="card-title">CVE-2026-85599 | Getgrav Grav fino a 6.2.4 Shortcode Core lorem/details cross site scripting</a>
+      <p class="card-desc">In Getgrav Grav fino a 6.2.4 è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciuta appartenen...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#15</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-19-cve-2026-85598-getgrav-grav-fino-a-2-0-24-modular-.html" class="card-title">CVE-2026-85598 | Getgrav Grav fino a 2.0.24 Modular Pages cross site scripting</a>
+      <p class="card-desc">In Getgrav Grav fino a 2.0.24 è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzione sconosciuta nel...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#16</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-22-cve-2026-85600-getgrav-fino-a-2-0-20-admin-thtml-n.html" class="card-title">CVE-2026-85600 | GetGrav fino a 2.0.20 Admin tHtml Nome utente cross site scripting</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in GetGrav Grav fino a 2.0.20. É interessato la funzione tHtml del componente Adm...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#17</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-23-cve-2026-85613-openpanel-dev-openpanel-fino-a-2-2-.html" class="card-title">CVE-2026-85613 | Openpanel-dev OpenPanel fino a 2.2.x Favicon Proxy Endpoint /misc/favicon cross site scripting</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in Openpanel-dev OpenPanel fino a 2.2.x. Riguarda una funzione sconosciuta del fi...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#18</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-44-cve-2026-85593-thorsten-phpmyfaq-fino-a-4-1-7-conv.html" class="card-title">CVE-2026-85593 | thorsten phpMyFAQ fino a 4.1.7 convertOldInternalLinks cross site scripting</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in thorsten phpMyFAQ fino a 4.1.7. Risulta coinvolta una funzione sconosciuta. La ...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#19</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-47-cve-2026-85577-wwbn-avideo-login-page-userlogin-ph.html" class="card-title">CVE-2026-85577 | WWBN AVideo Login Page userLogin.php Errore cross site scripting (c91b5975d)</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in WWBN AVideo. Riguarda una funzione sconosciuta del file userLogin.php del comp...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#20</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-65-cve-2026-85547-circl-misp-fino-a-2-5-45-csrf-prote.html" class="card-title">CVE-2026-85547 | CIRCL MISP fino a 2.5.45 CSRF Protection _isRest cross site request forgery (f82646727 / EUVD-2026-70985)</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in CIRCL MISP fino a 2.5.45. Riguarda la funzione _isRest del componente Prot...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#21</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-67-cve-2026-85541-interinfo-dreammaker-cross-site-scr.html" class="card-title">CVE-2026-85541 | Interinfo DreamMaker cross site scripting (EUVD-2026-70983)</a>
+      <p class="card-desc">In Interinfo DreamMaker è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzione sconosciuta. La manip...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#22</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-69-cve-2026-85546-misp-fino-a-2-4-54-sharing-group-in.html" class="card-title">CVE-2026-85546 | MISP fino a 2.4.54 Sharing Group __initialiseSGQuickEdit cross site request forgery (EUVD-2026-70981)</a>
+      <p class="card-desc">In MISP fino a 2.4.54 stata rilevata una vulnerabilità di livello problematico. Da questa vulnerabilità è interessato la funzione __initiali...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#23</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-70-cve-2026-27086-xtemos-woodmart-plugin-fino-a-8-3-7.html" class="card-title">CVE-2026-27086 | Xtemos WoodMart Plugin fino a 8.3.7 su WordPress cross site scripting (EUVD-2026-70980)</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in Xtemos WoodMart Plugin fino a 8.3.7. É interessato una funzione sconosciuta. L...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#24</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-91-cve-2026-85229-apache-skywalking-fino-a-10-4-0-boo.html" class="card-title">CVE-2026-85229 | Apache SkyWalking fino a 10.4.0 Booster UI cross site scripting</a>
+      <p class="card-desc">In Apache SkyWalking fino a 10.4.0 è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzione sconosciut...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#25</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-98-cve-2026-85085-canva-app-fino-a-2-375-x-webview-cr.html" class="card-title">CVE-2026-85085 | Canva App fino a 2.375.x WebView cross site scripting</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Canva App fino a 2.375.x. Risulta coinvolta una funzione sconosciuta de...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#26</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-1-cve-2026-85649-chew-kean-ho-software-actualizer-fi.html" class="card-title">CVE-2026-85649 | Chew Kean Ho Software Actualizer fino a 1.2.0 Password Loops debian-minbase-install.sh autenticazione debole</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Chew Kean Ho Software Actualizer fino a 1.2.0. Si considera coinvolta u...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#27</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-2-cve-2026-82309-robrwo-robots-validate-fino-a-0-3-1.html" class="card-title">CVE-2026-82309 | robrwo Robots::Validate fino a 0.3.10 _check_dns negazione del servizio</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in robrwo Robots::Validate fino a 0.3.10. Risulta coinvolta una funzione s...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#28</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-3-cve-2026-74237-gfi-exinda-ai-fino-a-7-6-4-iperf-cl.html" class="card-title">CVE-2026-74237 | GFI Exinda AI fino a 7.6.4 Iperf Client web_tools_cmd server/options escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in GFI Exinda AI fino a 7.6.4. Da questa vulnerabilità è interessato la...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#29</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-4-cve-2026-74236-gfi-exinda-ai-fino-a-7-6-4-diagnost.html" class="card-title">CVE-2026-74236 | GFI Exinda AI fino a 7.6.4 Diagnostic File Deletion unlink_or_email_file v_file_row_ directory traversal</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in GFI Exinda AI fino a 7.6.4. É interessato la funzione unlink_or_email_file de...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#30</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-5-cve-2026-74235-gfi-exinda-ai-fino-a-7-6-4-download.html" class="card-title">CVE-2026-74235 | GFI Exinda AI fino a 7.6.4 Download wcf_handle_download v_del_ directory traversal</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in GFI Exinda AI fino a 7.6.4. Riguarda la funzione wcf_handle_download del c...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#31</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-6-cve-2026-85643-code-projects-online-shopping-syste.html" class="card-title">CVE-2026-85643 | code-projects Online Shopping System 1.0 admin/adduser.php mysqli_query mobile iniezione SQL</a>
+      <p class="card-desc">In code-projects Online Shopping System 1.0 è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#32</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-7-cve-2026-18198-goldenhorn-oneit-prima-g-beklitepe-.html" class="card-title">CVE-2026-18198 | GOLDENHORN ONEIT prima Göbeklitepe iniezione SQL</a>
+      <p class="card-desc">In TAC Information Services Internal and External Trade GOLDENHORN ONEIT è stata rilevato un punto critico di livello critico. Si considera ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#33</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-8-cve-2026-85639-jofpin-trape-2-0-telemetry-endpoint.html" class="card-title">CVE-2026-85639 | jofpin trape 2.0 Telemetry Endpoint core/user.py vId race condition (Issue 408)</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in jofpin trape 2.0. Risulta coinvolta una funzione sconosciuta del file core/user...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#34</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-9-cve-2026-85638-jofpin-trape-2-0-core-user-py-vid-i.html" class="card-title">CVE-2026-85638 | jofpin trape 2.0 core/user.py vId/id escalationi di privilegi (Issue 407)</a>
+      <p class="card-desc">In jofpin trape 2.0 stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato una funzione sconosciuta del ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#35</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-10-cve-2026-85637-jofpin-trape-1-0-0-2-0-admin-endpoi.html" class="card-title">CVE-2026-85637 | jofpin trape 1.0.0/2.0 Admin Endpoint core/sockets.py join_room autenticazione debole (Issue 406)</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in jofpin trape 1.0.0/2.0. É interessato la funzione join_room del file core/sock...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#36</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-11-cve-2026-85636-jofpin-trape-1-0-0-login-endpoint-c.html" class="card-title">CVE-2026-85636 | jofpin trape 1.0.0 Login Endpoint core/stats.py autenticazione debole (Issue 405)</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in jofpin trape 1.0.0. Riguarda una funzione sconosciuta del file core/stats.py d...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#37</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-12-cve-2026-85617-grokability-snipe-it-fino-a-8-6-2-b.html" class="card-title">CVE-2026-85617 | Grokability Snipe-IT fino a 8.6.2 Bulk Delete escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come critico in Grokability Snipe-IT fino a 8.6.2. Viene interessata una funzione sconosciuta...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#38</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-13-cve-2026-85614-openpanel-dev-openpanel-fino-a-2-2-.html" class="card-title">CVE-2026-85614 | Openpanel-dev OpenPanel fino a 2.2.x Site Checker /tools/site-checker url escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Openpanel-dev OpenPanel fino a 2.2.x. Si considera coinvolta una funzio...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#39</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-15-cve-2026-19080-menulux-portal-rivelazione-di-infor.html" class="card-title">CVE-2026-19080 | Menulux Portal rivelazione di informazioni</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in Menulux Portal. Da questa vulnerabilità è interessato una funzione s...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#40</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-16-cve-2026-85603-getgrav-grav-fino-a-1-10-54-admin-p.html" class="card-title">CVE-2026-85603 | getgrav Grav fino a 1.10.54 Admin Plugin lang directory traversal</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in getgrav Grav fino a 1.10.54. É interessato una funzione sconosciuta del compo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#41</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-20-cve-2026-85609-openpanel-dev-openpanel-fino-a-2-2-.html" class="card-title">CVE-2026-85609 | Openpanel-dev Openpanel fino a 2.2.x Site Checker tools.controller.ts fetchWithRedirects url escalationi di privilegi</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in Openpanel-dev Openpanel fino a 2.2.x. Risulta coinvolta una funzione sconosciut...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#42</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-21-cve-2026-85602-getgrav-grav-form-plugin-fino-a-9-1.html" class="card-title">CVE-2026-85602 | getgrav Grav Form Plugin fino a 9.1.19 reCAPTCHA g-recaptcha-response autenticazione debole</a>
+      <p class="card-desc">In getgrav Grav Form Plugin fino a 9.1.19 stata rilevata una vulnerabilità di livello problematico. Da questa vulnerabilità è interessato un...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#43</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-24-cve-2026-85612-openpanel-dev-openpanel-fino-a-2-2-.html" class="card-title">CVE-2026-85612 | Openpanel-dev OpenPanel fino a 2.2.x Url Parameter /misc/favicon url escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Openpanel-dev OpenPanel fino a 2.2.x. Viene interessata una funzione sco...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#44</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-25-cve-2026-85616-grokability-snipe-it-fino-a-8-6-1-c.html" class="card-title">CVE-2026-85616 | Grokability Snipe-IT fino a 8.6.1 Checkout-Acceptance Report Actions escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come critico in Grokability Snipe-IT fino a 8.6.1. Si considera coinvolta una funzione scono...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#45</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-26-cve-2026-85615-openpanel-dev-openpanel-fino-a-2-2-.html" class="card-title">CVE-2026-85615 | Openpanel-dev Openpanel fino a 2.2.x tRPC Procedures report.getLayouts/report.resetLayout dashboardId/projectId escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in Openpanel-dev Openpanel fino a 2.2.x. Risulta coinvolta una funzione sconosc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#46</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-27-cve-2026-85611-openpanel-dev-openpanel-fino-a-2-2-.html" class="card-title">CVE-2026-85611 | Openpanel-dev OpenPanel fino a 2.2.x tRPC Procedures report.getLayouts/report.resetLayout projectId/dashboardId escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in Openpanel-dev OpenPanel fino a 2.2.x. Da questa vulnerabilità è interessa...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#47</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-28-cve-2026-85597-traefik-fino-a-2-11-54-tls-option-r.html" class="card-title">CVE-2026-85597 | Traefik fino a 2.11.54 TLS Option Resolution autenticazione debole</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in Traefik fino a 2.11.54. É interessato una funzione sconosciuta del componente...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#48</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-29-cve-2026-19043-menulux-portal-escalationi-di-privi.html" class="card-title">CVE-2026-19043 | Menulux Portal escalationi di privilegi (ID 20260903211448)</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Menulux Portal. Riguarda una funzione sconosciuta. L’alterazione causa esc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#49</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-30-cve-2026-19051-menulux-portal-cifratura-debole.html" class="card-title">CVE-2026-19051 | Menulux Portal cifratura debole</a>
+      <p class="card-desc">In Menulux Portal è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciuta. La manipolazione por...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#50</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-31-cve-2026-85610-openpanel-dev-openpanel-fino-a-2-2-.html" class="card-title">CVE-2026-85610 | Openpanel-dev OpenPanel fino a 2.2.x Chart escalationi di privilegi</a>
+      <p class="card-desc">In Openpanel-dev OpenPanel fino a 2.2.x è stata rilevato un punto critico di livello critico. Si considera coinvolta una funzione sconosciut...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#51</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-32-cve-2026-85604-getgrav-grav-fino-a-2-0-18-twig-sor.html" class="card-title">CVE-2026-85604 | Getgrav Grav fino a 2.0.18 Twig Sort Filter GravExtension.php spl_autoload escalationi di privilegi</a>
+      <p class="card-desc">Un punto critico di livello critico è stato rilevato in Getgrav Grav fino a 2.0.18. Risulta coinvolta una funzione sconosciuta del file Grav...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#52</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-33-cve-2026-85596-traefik-labs-fino-a-3-7-10-kubernet.html" class="card-title">CVE-2026-85596 | Traefik Labs fino a 3.7.10 Kubernetes Ingress NGINX Provider autenticazione debole</a>
+      <p class="card-desc">In Traefik Labs Traefik fino a 3.7.10 stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato una funzion...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#53</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-34-cve-2026-85595-traefik-fino-a-2-11-54-digestauth-m.html" class="card-title">CVE-2026-85595 | Traefik fino a 2.11.54 digestAuth middleware autenticazione debole</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello critico in Traefik fino a 2.11.54. É interessato una funzione sconosciuta del componente diges...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#54</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-35-cve-2026-85583-siyuan-note-siyuan-fino-a-3-8-1-rea.html" class="card-title">CVE-2026-85583 | siyuan-note SiYuan fino a 3.8.1 Reader-Accessible File-Read Endpoint directory traversal</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in siyuan-note SiYuan fino a 3.8.1. Riguarda una funzione sconosciuta del compone...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#55</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-36-cve-2026-85578-siyuan-note-siyuan-fino-a-3-8-1-api.html" class="card-title">CVE-2026-85578 | siyuan-note SiYuan fino a 3.8.1 /api/file/getFile escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in siyuan-note SiYuan fino a 3.8.1. Viene interessata una funzione sconosci...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#56</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-37-cve-2026-85585-siyuan-note-siyuan-fino-a-3-8-1-req.html" class="card-title">CVE-2026-85585 | siyuan-note SiYuan fino a 3.8.1 Request Concurrency Middleware negazione del servizio</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in siyuan-note SiYuan fino a 3.8.1. Si considera coinvolta una funzione sc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#57</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-38-cve-2026-85584-siyuan-note-siyuan-fino-a-3-8-1-pub.html" class="card-title">CVE-2026-85584 | siyuan-note SiYuan fino a 3.8.1 Publish Service Basic Auth Throttle negazione del servizio</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in siyuan-note SiYuan fino a 3.8.1. Risulta coinvolta una funzione sconosc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#58</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-39-cve-2026-85582-siyuan-note-siyuan-fino-a-3-8-1-pub.html" class="card-title">CVE-2026-85582 | siyuan-note SiYuan fino a 3.8.1 Publish Service Basic Auth negazione del servizio</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in siyuan-note SiYuan fino a 3.8.1. Da questa vulnerabilità è interessa...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#59</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-40-cve-2026-85581-siyuan-note-siyuan-fino-a-3-8-1-api.html" class="card-title">CVE-2026-85581 | siyuan-note SiYuan fino a 3.8.1 /api/system/uiproc negazione del servizio</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in siyuan-note SiYuan fino a 3.8.1. É interessato una funzione sconosciuta del f...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#60</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-41-cve-2026-85580-siyuan-note-fino-a-3-8-1-mcp-file-a.html" class="card-title">CVE-2026-85580 | SiYuan Note fino a 3.8.1 MCP File-Access publishAccess.json rivelazione di informazioni</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in SiYuan Note SiYuan fino a 3.8.1. Riguarda una funzione sconosciuta del fil...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#61</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-42-cve-2026-85579-siyuan-note-siyuan-fino-a-3-8-1-und.html" class="card-title">CVE-2026-85579 | SiYuan-Note SiYuan fino a 3.8.1 Undo Log undoState root ID rivelazione di informazioni</a>
+      <p class="card-desc">In SiYuan-Note SiYuan fino a 3.8.1 è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciuta appa...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#62</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-43-cve-2026-85594-traefik-labs-fino-a-3-7-12-kubernet.html" class="card-title">CVE-2026-85594 | Traefik Labs fino a 3.7.12 Kubernetes Ingress Provider escalationi di privilegi</a>
+      <p class="card-desc">In Traefik Labs Traefik fino a 3.7.12 è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzione sconosc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#63</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-45-cve-2026-85590-thorsten-phpmyfaq-fino-a-4-1-7-totp.html" class="card-title">CVE-2026-85590 | thorsten phpMyFAQ fino a 4.1.7 TOTP remove-twofactor removeTwofactorConfig twofactor_enabled autenticazione debole</a>
+      <p class="card-desc">In thorsten phpMyFAQ fino a 4.1.7 stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato la funzione rem...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#64</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-46-cve-2026-85591-thorsten-phpmyfaq-fino-a-4-1-7-user.html" class="card-title">CVE-2026-85591 | thorsten phpMyFAQ fino a 4.1.7 User Control Panel API Endpoint autenticazione debole</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in thorsten phpMyFAQ fino a 4.1.7. É interessato una funzione sconosciuta del com...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#65</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-48-cve-2026-85588-thorsten-phpmyfaq-fino-a-4-1-7-user.html" class="card-title">CVE-2026-85588 | thorsten phpMyFAQ fino a 4.1.7 User Data Export cifratura debole</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in thorsten phpMyFAQ fino a 4.1.7. Viene interessata una funzione sconosciu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#66</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-49-cve-2026-85592-thorsten-phpmyfaq-fino-a-4-1-7-ques.html" class="card-title">CVE-2026-85592 | thorsten phpMyFAQ fino a 4.1.7 Question Creation Endpoint isAddingQuestionsAllowed escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in thorsten phpMyFAQ fino a 4.1.7. Si considera coinvolta una funzione sco...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#67</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-50-cve-2026-85589-thorsten-phpmyfaq-fino-a-4-2-0-alph.html" class="card-title">CVE-2026-85589 | thorsten phpMyFAQ fino a 4.2.0-alpha.1 Admin Dashboard API escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in thorsten phpMyFAQ fino a 4.2.0-alpha.1. Risulta coinvolta una funzione ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#68</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-51-cve-2026-85587-thorsten-phpmyfaq-fino-a-4-1-7-esca.html" class="card-title">CVE-2026-85587 | thorsten phpMyFAQ fino a 4.1.7 escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in thorsten phpMyFAQ fino a 4.1.7. Da questa vulnerabilità è interessat...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#69</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-52-cve-2026-85586-thorsten-phpmyfaq-fino-a-4-1-7-capt.html" class="card-title">CVE-2026-85586 | thorsten phpMyFAQ fino a 4.1.7 Captcha store autenticazione debole</a>
+      <p class="card-desc">Un punto di debole di livello critico è stato rilevato in thorsten phpMyFAQ fino a 4.1.7. É interessato una funzione sconosciuta del compone...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#70</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-53-cve-2026-27347-crocoblock-jetpopup-plugin-fino-a-2.html" class="card-title">CVE-2026-27347 | Crocoblock JetPopup Plugin fino a 2.0.20.2 su WordPress escalationi di privilegi (EUVD-2026-70999)</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Crocoblock JetPopup Plugin fino a 2.0.20.2. Riguarda una funzione sconosci...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#71</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-54-cve-2026-84428-fastify-fino-a-5-12-1-header-schema.html" class="card-title">CVE-2026-84428 | Fastify fino a 5.12.1 Header Schema Compilation escalationi di privilegi (EUVD-2026-70998)</a>
+      <p class="card-desc">In Fastify fino a 5.12.1 è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciuta appartenente a...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#72</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-55-cve-2026-85534-red-hat-enterprise-linux-fino-a-10-.html" class="card-title">CVE-2026-85534 | Red Hat Enterprise Linux fino a 10 libsoup buffer overflow (EUVD-2026-70997)</a>
+      <p class="card-desc">In Red Hat Enterprise Linux 6/7/8/9/10 è stata rilevato un punto critico di livello critico. Si considera coinvolta una funzione sconosciuta...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#73</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-56-cve-2026-4644-google-integration-connectors-prima-.html" class="card-title">CVE-2026-4644 | Google Integration Connectors prima 2025-12-11 HTTP Connector escalationi di privilegi (EUVD-2026-70996)</a>
+      <p class="card-desc">Un punto critico di livello critico è stato rilevato in Google Integration Connectors. Risulta coinvolta una funzione sconosciuta del compon...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#74</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-57-cve-2026-84045-e-cab-taxi-booking-manager-for-wooc.html" class="card-title">CVE-2026-84045 | E-cab Taxi Booking Manager for Woocommerce Plugin fino a 2.0.4 su WordPress (EUVD-2026-70993)</a>
+      <p class="card-desc">In E-cab Taxi Booking Manager for Woocommerce Plugin fino a 2.0.4 stata rilevata una vulnerabilità di livello problematico. Da questa vulner...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#75</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-58-cve-2026-79707-google-cloud-agent-development-kit-.html" class="card-title">CVE-2026-79707 | Google Cloud Agent Development Kit fino a 1.21.x Builder Endpoint file_path directory traversal (EUVD-2026-70994)</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in Google Cloud Agent Development Kit fino a 1.21.x. É interessato una funzione s...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#76</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-59-cve-2026-84469-fastify-fino-a-5-12-1-escalationi-d.html" class="card-title">CVE-2026-84469 | Fastify fino a 5.12.1 escalationi di privilegi (EUVD-2026-70989)</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in Fastify fino a 5.12.1. Riguarda una funzione sconosciuta. La manipolazione di ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#77</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-60-cve-2026-84044-restaurant-menu-and-food-ordering-p.html" class="card-title">CVE-2026-84044 | Restaurant Menu and Food Ordering Plugin fino a 2.4.11 su WordPress autenticazione debole (EUVD-2026-70992)</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Restaurant Menu and Food Ordering Plugin fino a 2.4.11 su WordPress. Vie...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#78</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-61-cve-2026-84043-epayco-payment-gateway-plugin-fino-.html" class="card-title">CVE-2026-84043 | ePayco Payment Gateway Plugin fino a 8.4.6 su WordPress autenticazione debole (EUVD-2026-70991)</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in ePayco Payment Gateway Plugin fino a 8.4.6 su WordPress. Si considera c...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#79</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-62-cve-2026-82923-ai-website-builder-plugin-fino-a-1-.html" class="card-title">CVE-2026-82923 | AI Website Builder Plugin fino a 1.0.0 su WordPress REST API Routes escalationi di privilegi (EUVD-2026-70990)</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in AI Website Builder Plugin fino a 1.0.0 su WordPress. Risulta coinvolta una f...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#80</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-63-cve-2026-85540-interinfo-dreammaker-iniezione-sql-.html" class="card-title">CVE-2026-85540 | Interinfo DreamMaker iniezione SQL (EUVD-2026-70982)</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in Interinfo DreamMaker. Da questa vulnerabilità è interessato una funzione ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#81</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-64-cve-2026-13148-softing-smartlink-hw-pn-fino-a-1-9-.html" class="card-title">CVE-2026-13148 | Softing smartLink HW-PN fino a 1.9 negazione del servizio (EUVD-2026-70986)</a>
+      <p class="card-desc">Un punto di debole di livello critico è stato rilevato in Softing smartLink HW-PN fino a 1.9. É interessato una funzione sconosciuta. Per ca...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#82</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-66-cve-2026-76169-fastify-fino-a-5-12-1-not-found-rou.html" class="card-title">CVE-2026-76169 | Fastify fino a 5.12.1 Not-Found Router rivelazione di informazioni (EUVD-2026-70988)</a>
+      <p class="card-desc">In Fastify fino a 5.12.1 è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciuta appartenente a...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#83</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-68-cve-2026-84504-fastify-fino-a-5-12-1-request-body-.html" class="card-title">CVE-2026-84504 | Fastify fino a 5.12.1 Request Body Valore escalationi di privilegi (EUVD-2026-70984)</a>
+      <p class="card-desc">Un punto critico di livello critico è stato rilevato in Fastify fino a 5.12.1. Risulta coinvolta una funzione sconosciuta del componente Req...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#84</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-71-cve-2026-85184-fastify-middie-fino-a-9-3-3-escalat.html" class="card-title">CVE-2026-85184 | fastify middie fino a 9.3.3 escalationi di privilegi (EUVD-2026-70979)</a>
+      <p class="card-desc">Una vulnerabilità di livello critico è stata rilevata in fastify middie fino a 9.3.3. Riguarda una funzione sconosciuta. Attraverso l&#39;influe...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#85</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-72-cve-2026-71198-openstack-location-api-escalationi-.html" class="card-title">CVE-2026-71198 | OpenStack Location API escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come critico in OpenStack. Viene interessata una funzione sconosciuta appartenente al compone...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#86</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-73-cve-2026-81302-jal-information-pallet-control-pall.html" class="card-title">CVE-2026-81302 | JAL Information PALLET CONTROL/PalletControl/PalletControl Cloud escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come estremamente critico in JAL Information PALLET CONTROL, PalletControl and PalletControl...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#87</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-74-cve-2026-85533-misp-fino-a-2-5-45-sharing-group-sh.html" class="card-title">CVE-2026-85533 | MISP fino a 2.5.45 Sharing Group SharingGroup::canUse sharing_group_id escalationi di privilegi (9b1363955)</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in MISP fino a 2.5.45. Risulta coinvolta una funzione sconosciuta del component...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#88</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-75-cve-2026-85538-misp-fino-a-2-5-45-attribute-deleti.html" class="card-title">CVE-2026-85538 | MISP fino a 2.5.45 Attribute Deletion deleteAttribute escalationi di privilegi (d0a6f963f / EUVD-2026-70958)</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in MISP fino a 2.5.45. Da questa vulnerabilità è interessato la funzione Mis...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#89</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-76-cve-2026-71197-openstack-glance-web-download-escal.html" class="card-title">CVE-2026-71197 | OpenStack Glance Web Download escalationi di privilegi</a>
+      <p class="card-desc">Un punto di debole di livello critico è stato rilevato in OpenStack Glance. É interessato una funzione sconosciuta del componente Web Downlo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#90</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-77-cve-2026-81665-red-hat-enterprise-linux-openshift-.html" class="card-title">CVE-2026-81665 | Red Hat Enterprise Linux/OpenShift Container Platform buffer overflow</a>
+      <p class="card-desc">Un punto di criticita di livello estremamente critico è stato rilevato in Red Hat Enterprise Linux and OpenShift Container Platform. Riguard...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#91</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-78-cve-2026-71196-openstack-glance-escalationi-di-pri.html" class="card-title">CVE-2026-71196 | OpenStack Glance escalationi di privilegi (Nessus ID 342733)</a>
+      <p class="card-desc">In OpenStack Glance è stato trovato un punto critico di livello critico. Viene interessata una funzione sconosciuta. La manipolazione porta ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#92</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-79-cve-2026-27432-sc-internet-vivoo-rentals-plugin-fi.html" class="card-title">CVE-2026-27432 | sc Internet Vivoo Rentals Plugin fino a 3.15.x su WordPress escalationi di privilegi</a>
+      <p class="card-desc">In sc Internet Vivoo Rentals Plugin fino a 3.15.x è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funz...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#93</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-80-cve-2026-85528-snowflake-jdbc-driver-fino-a-4-3-3-.html" class="card-title">CVE-2026-85528 | Snowflake JDBC Driver fino a 4.3.3 connections.toml account escalationi di privilegi</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in Snowflake JDBC Driver fino a 4.3.3. Risulta coinvolta una funzione sconosciuta ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#94</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-81-cve-2026-81666-corosync-check-memb-commit-token-sa.html" class="card-title">CVE-2026-81666 | Corosync check_memb_commit_token_sanity buffer overflow (EUVD-2026-70987)</a>
+      <p class="card-desc">In Corosync stata rilevata una vulnerabilità di livello estremamente critico. Da questa vulnerabilità è interessato la funzione check_memb_c...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#95</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-82-cve-2026-85311-kings-plugins-marketking-plugin-fin.html" class="card-title">CVE-2026-85311 | Kings Plugins MarketKing Plugin fino a 2.1.60 su WordPress escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in Kings Plugins MarketKing Plugin fino a 2.1.60. É interessato una funzione scon...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#96</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-83-cve-2026-32480-wc-lovers-wcfm-membership-plugin-fi.html" class="card-title">CVE-2026-32480 | WC Lovers WCFM Membership Plugin fino a 2.11.11 su WordPress escalationi di privilegi</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in WC Lovers WCFM Membership Plugin fino a 2.11.11. Riguarda una funzione sconosc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#97</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-84-cve-2026-57777-automattic-woocommerce-plugin-fino-.html" class="card-title">CVE-2026-57777 | Automattic WooCommerce Plugin fino a 10.x su WordPress iniezione SQL</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Automattic WooCommerce Plugin fino a 10.x su WordPress. Viene interessat...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#98</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-85-cve-2026-15937-checkmk-fino-a-2-5-0p9-autenticazio.html" class="card-title">CVE-2026-15937 | Checkmk fino a 2.5.0p9 autenticazione debole</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Checkmk. Si considera coinvolta una funzione sconosciuta. L’alterazione...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#99</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-86-cve-2026-85525-snowflake-go-driver-prima-4-7-3-aut.html" class="card-title">CVE-2026-85525 | Snowflake Go Driver prima 4.7.3 autenticazione debole</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Snowflake Go Driver, JDBC Driver, Node.js Driver and Python Connector. ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#100</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-87-cve-2026-85197-red-hat-enterprise-linux-fino-a-10-.html" class="card-title">CVE-2026-85197 | Red Hat Enterprise Linux fino a 10 HTTP/2 Client buffer overflow</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come estremamente critico in Red Hat Enterprise Linux 6/7/8/9/10. Da questa vulnerabilità...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#101</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-88-cve-2026-85522-valkey-io-valkey-fino-a-9-5-4-9-1-0.html" class="card-title">CVE-2026-85522 | valkey-io valkey fino a 9.5.4/9.1.0 Slot Migration cluster_migrateslots.c createSlotImportJob job_name rivelazione di informazioni (Issue 4207)</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in valkey-io valkey fino a 9.5.4/9.1.0. É interessato la funzione createSlotImpo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#102</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-89-cve-2026-6217-pik-online-software-solutions-pik-on.html" class="card-title">CVE-2026-6217 | Pik Online Software Solutions Pik Online Portal fino a 3.5.1 cifratura debole</a>
+      <p class="card-desc">Un punto di criticita di livello critico è stato rilevato in Pik Online Software Solutions Pik Online Portal fino a 3.5.1. Riguarda una funz...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#103</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-90-cve-2026-76925-flatpak-symlink-race-condition.html" class="card-title">CVE-2026-76925 | Flatpak Symlink race condition</a>
+      <p class="card-desc">In Flatpak è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciuta appartenente al componente S...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#104</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-92-cve-2026-70403-xing-cptrans-me-x-prima-1-8-1-17-au.html" class="card-title">CVE-2026-70403 | XING CPTrans-ME-X prima 1.8.1.17 autenticazione debole</a>
+      <p class="card-desc">Un punto critico di livello estremamente critico è stato rilevato in XING CPTrans-ME-X. Risulta coinvolta una funzione sconosciuta. La gesti...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#105</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-93-cve-2026-69657-xing-cptrans-me-x-prima-1-8-1-17-es.html" class="card-title">CVE-2026-69657 | Xing CPTrans-ME-X prima 1.8.1.17 escalationi di privilegi</a>
+      <p class="card-desc">In Xing CPTrans-ME-X stata rilevata una vulnerabilità di livello estremamente critico. Da questa vulnerabilità è interessato una funzione sc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#106</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-94-cve-2026-66840-xing-cptrans-me-x-prima-1-8-1-17-ri.html" class="card-title">CVE-2026-66840 | Xing CPTrans-ME-X prima 1.8.1.17 rivelazione di informazioni</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in Xing CPTrans-ME-X. É interessato una funzione sconosciuta. La manipolazione po...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#107</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-95-cve-2026-62928-xing-cptrans-me-x-prima-1-8-1-17-es.html" class="card-title">CVE-2026-62928 | Xing CPTrans-ME-X prima 1.8.1.17 escalationi di privilegi</a>
+      <p class="card-desc">Una vulnerabilità di livello estremamente critico è stata rilevata in Xing CPTrans-ME-X. Riguarda una funzione sconosciuta. Attraverso l&#39;inf...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#108</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-96-cve-2026-15354-mauro-cassani-acpt-plugin-fino-a-2-.html" class="card-title">CVE-2026-15354 | Mauro Cassani ACPT Plugin fino a 2.0.66 su WordPress submit escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come critico in Mauro Cassani ACPT Plugin fino a 2.0.66 su WordPress. Viene interessata una f...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#109</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-97-cve-2026-85094-canva-fino-a-2-375-x-webview-rivela.html" class="card-title">CVE-2026-85094 | Canva fino a 2.375.x WebView rivelazione di informazioni</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Canva fino a 2.375.x. Si considera coinvolta una funzione sconosciuta n...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#110</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-99-cve-2026-84066-directorist-ai-powered-business-dir.html" class="card-title">CVE-2026-84066 | Directorist AI-Powered Business Directory fino a 8.8 su WordPress escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in Directorist AI-Powered Business Directory and Listings &amp; Classified Ads P...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#111</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-100-cve-2026-82186-wplp-cookie-consent-plugin-fino-a-4.html" class="card-title">CVE-2026-82186 | WPLP Cookie Consent Plugin fino a 4.4.1 su WordPress pagination iniezione SQL</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in WPLP Cookie Consent Plugin fino a 4.4.1. É interessato una funzione sconosciu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#112</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-102-plex-urges-immediate-updates-after-patching-multip.html" class="card-title">Plex Urges Immediate Updates After Patching Multiple Undisclosed Security Flaws</a>
+      <p class="card-desc">Plex is urging users to update their instances to the latest version following the release of an update that patches multiple security flaws...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#113</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-105-threatsday-ceo-phishing-kits-5k-dropbox-account-ha.html" class="card-title">ThreatsDay: CEO Phishing Kits, 5K Dropbox Account Hacks, OAuth Traps + 17 More Stories</a>
+      <p class="card-desc">The worst part is how normal these attacks look. A call from IT. A shared file. A trusted app. A simple request to click “Allow.” Why break ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#114</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-107-brazetsu-malware-turns-compromised-windows-hosts-i.html" class="card-title">BraZetsu Malware Turns Compromised Windows Hosts Into Criminal Marketplace Inventory</a>
+      <p class="card-desc">Cybersecurity researchers have disclosed details of a sophisticated Python-based Windows malware framework called BraZetsu that fuels an und...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#115</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-108-thomson-reuters-court-software-breach-may-have-exp.html" class="card-title">Thomson Reuters Court Software Breach May Have Exposed SSNs and Sealed Data</a>
+      <p class="card-desc">Thomson Reuters disclosed on Wednesday that an unauthorized party obtained files from C-Track, the court case management platform sold by it...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#116</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-109-39-new-methods-that-compromise-passkey-authenticat.html" class="card-title">39 New Methods That Compromise Passkey Authentication</a>
+      <p class="card-desc">Passkeys eliminate many password-based attacks, but researchers have documented 39 methods for compromising authentication built around them...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#117</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-111-exchange-online-outage-causes-email-delays-server-.html" class="card-title">Exchange Online outage causes email delays, &#39;Server busy&#39; errors</a>
+      <p class="card-desc">Microsoft is working to resolve an ongoing Exchange Online outage that is delaying email sent to and received from external domains. [...]</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#118</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-113-french-hospital-fined-500-000-after-breach-exposes.html" class="card-title">French hospital fined €500,000 after breach exposes data of 727,000</a>
+      <p class="card-desc">France&#39;s data protection authority (CNIL) has fined Hôpital privé de la Loire €500,000 ($580,000) for failing to adequately protect patients...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#119</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-114-coder-s-registry-infrastructure-compromised-to-pus.html" class="card-title">Coder&#39;s registry infrastructure compromised to push malicious modules</a>
+      <p class="card-desc">Attackers compromised Coder&#39;s Cloudflare infrastructure and added unauthorized registry servers that delivered malicious Terraform modules c...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#120</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-116-microsoft-kb5120998-mouse-reset-bug-affects-only-n.html" class="card-title">Microsoft: KB5120998 mouse reset bug affects only non-English PCs</a>
+      <p class="card-desc">Microsoft says a known issue that reverts mouse settings after installing the KB5120998 August 2026 preview update affects only non-English ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#121</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-117-openai-confirms-chatgpt-is-down-ahead-of-astra-mod.html" class="card-title">OpenAI confirms ChatGPT is down ahead of &#39;Astra&#39; model launch</a>
+      <p class="card-desc">ChatGPT and Codex are experiencing a major outage, with users reporting errors across nearly every major ChatGPT feature. [...]</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#122</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-118-anthropic-confirms-claude-is-down-multiple-models-.html" class="card-title">Anthropic confirms Claude is down, multiple models affected</a>
+      <p class="card-desc">Claude is experiencing an outage, with users encountering elevated errors when sending requests to multiple Anthropic AI models. [...]</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#123</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-120-ai-is-ending-the-era-of-hidden-vulnerabilities-are.html" class="card-title">AI Is Ending the Era of Hidden Vulnerabilities — Are Vendors Ready?</a>
+      <p class="card-desc">A tidal wave of bug reports is overwhelming software vendors, exposing secure-by-design failures and creating disclosure bottlenecks.</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#124</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-121-large-enterprises-targeted-in-fake-merger-amp-acqu.html" class="card-title">Large Enterprises Targeted in Fake Merger &amp;amp; Acquisition Scams</a>
+      <p class="card-desc">Threat actors behind the &amp;quot;Phantom Deal&amp;quot; campaign are studying companies in extreme detail, aiming to dupe midlevel employees into ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#125</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-122-what-we-missed-did-shinyhunters-breach-reliaquest.html" class="card-title">What We Missed: Did ShinyHunters &#39;Breach&#39; ReliaQuest?</a>
+      <p class="card-desc">In this video conversation, Dark Reading editors discuss some of the news they didn&#39;t get a chance to cover, from the latest antics of Shiny...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#126</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-123-ai-machine-speed-cuts-2-week-attack-down-to-10-hou.html" class="card-title">AI &#39;Machine Speed&#39; Cuts 2-Week Attack Down to 10 Hours</a>
+      <p class="card-desc">The incident demonstrates how frontier AI agents can dramatically compress an attack timeline and coordinate a large-scale breach, according...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#127</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-124-virtual-event-what-every-enterprise-should-know-ab.html" class="card-title">[Virtual Event] What Every Enterprise Should Know About Securing Cloud Assets in the Age of AI</a>
+      <p class="card-desc"></p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#128</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-125-virtual-event-building-a-secure-ai-strategy-for-th.html" class="card-title">[Virtual Event] Building a Secure AI Strategy for the Enterprise</a>
+      <p class="card-desc"></p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#129</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-126-hackers-turn-claude-qwen-and-deepseek-into-ai-agen.html" class="card-title">Hackers Turn Claude, Qwen and DeepSeek Into AI Agents for Real-World Cyberattacks</a>
+      <p class="card-desc">Hackers have turned commercial AI models into working parts of a cyberattack operation. The campaign paired AI-directed tasking with familia...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#130</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-127-microsoft-confirms-new-exchange-online-outage-dela.html" class="card-title">Microsoft Confirms New Exchange Online Outage Delaying Emails from External Domains</a>
+      <p class="card-desc">Microsoft has confirmed a fresh Exchange Online incident, tracked as EX1467029, causing delays for users sending and receiving email message...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#131</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-128-plex-urges-users-to-update-media-server-immediatel.html" class="card-title">Plex Urges Users to Update Media Server Immediately to Fix Multiple Security Flaws</a>
+      <p class="card-desc">Plex has issued an urgent security update for Plex Media Server and Plex Desktop, asking users to install the latest releases as soon as pos...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#132</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-129-multiple-tp-link-archer-vulnerabilities-allow-atta.html" class="card-title">Multiple TP-Link Archer Vulnerabilities Allow Attackers to Execute Remote Code</a>
+      <p class="card-desc">TP-Link has disclosed two security vulnerabilities in its Archer AX55 v4 router that could let attackers on the local network crash a servic...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#133</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-130-openai-agents-hijack-german-wiki-in-ai-breakout-to.html" class="card-title">OpenAI Agents Hijack German Wiki in AI Breakout to Share Evasion and Bypass Tactics</a>
+      <p class="card-desc">Autonomous AI agents that identified themselves as OpenAI systems hijacked an obscure German-language wiki this spring and turned it into a ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#134</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-131-microsoft-365-phishing-technique-uses-empty-envelo.html" class="card-title">Microsoft 365 Phishing Technique Uses Empty Envelope Sender to Evade Direct Send Blocking</a>
+      <p class="card-desc">Microsoft 365 users are facing a phishing technique built on a small change: attackers leave the SMTP envelope sender blank. The omission ca...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#135</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-132-trezor-confirms-shipmonk-data-breach-exposed-67-00.html" class="card-title">Trezor Confirms ShipMonk Data Breach Exposed 67,000 Additional US Customers</a>
+      <p class="card-desc">Hardware wallet maker Trezor has confirmed that a data breach at logistics partner ShipMonk is substantially larger than first reported, aft...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#136</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-133-microsoft-teams-to-add-qr-code-protection-in-teams.html" class="card-title">Microsoft Teams to Add QR Code Protection in Teams Messaging</a>
+      <p class="card-desc">Microsoft Teams is preparing to introduce new QR code protection controls designed to reduce phishing and fraud risks in chats involving ext...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#137</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-134-14-fake-macos-installers-linked-to-dprk-campaign-d.html" class="card-title">14 Fake macOS Installers Linked to DPRK Campaign Deliver Credential-Stealing RAT</a>
+      <p class="card-desc">Mac users are being targeted with 14 fake application installers that appear to offer familiar software but instead start a credential-steal...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#138</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-135-dahua-camera-backdoor-survives-password-changes-an.html" class="card-title">Dahua Camera Backdoor Survives Password Changes and Factory Resets on Compromised Devices</a>
+      <p class="card-desc">A large campaign has compromised more than 14,000 internet-connected Dahua cameras, exposing how vulnerable surveillance equipment can becom...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#139</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-137-12-year-old-postgresql-vulnerability-enables-datab.html" class="card-title">12-Year-Old PostgreSQL Vulnerability Enables Database, Server Takeover</a>
+      <p class="card-desc">Dubbed PostGREShell, CVE-2026-6471 turns low-level replication access into code execution, permanent superuser privileges and a persistent d...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#140</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-138-catch-raises-5-million-for-ai-executive-assistant-.html" class="card-title">Catch Raises $5 Million for AI Executive Assistant With Guardrails</a>
+      <p class="card-desc">Catch promises the capabilities of a trusted executive assistant, with built-in controls governing what data and systems it can access. The ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#141</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-141-nvidia-is-buying-ai-platform-hugging-face-for-13-b.html" class="card-title">Nvidia Is Buying AI Platform Hugging Face for $13 Billion</a>
+      <p class="card-desc">The deal highlights Nvidia’s push to champion increasingly popular open-source AI models. The post Nvidia Is Buying AI Platform Hugging Face...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#142</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-142-manchester-airports-group-data-on-8-8-million-peop.html" class="card-title">Manchester Airports Group Data on 8.8 Million People Leaked After Ransom Refusal</a>
+      <p class="card-desc">Hacker group published roughly 550GB of data after MAG reportedly refused to pay a ransom demand; the group says it gained access via expose...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#143</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-143-capsule-security-launches-ai-circuit-breaker-to-st.html" class="card-title">Capsule Security Launches ‘AI Circuit Breaker’ to Stop Rogue Agents</a>
+      <p class="card-desc">New models, trained using NVIDIA Nemotron 3 Ultra, aim to catch rogue agent behavior before it executes, without the latency of large-model ...</p>
+    </div>
+</div>
+
+<div class="no-results" id="no-results">
+  <p>Nessun risultato trovato</p>
+</div>
+
+<footer class="footer">
+  <p>Cyber Security News Dashboard - Generato automaticamente senza amore o sentimento</p>
+  <p>Creato (con n8n e un pochino di javascript scritto da un LLM) da: <a href="https://www.linkedin.com/in/mocciaalessandro" target="_blank">Alessandro</a></p>
+</footer>
+
+<script>
+(function() {
+  const cards = document.querySelectorAll('.card');
+  const buttons = document.querySelectorAll('[data-filter]');
+  const searchInput = document.getElementById('search');
+  const noResults = document.getElementById('no-results');
+  
+  let currentFilter = 'all';
+  let searchTerm = '';
+
+  const filterCards = () => {
+    let visibleCount = 0;
+    
+    cards.forEach(card => {
+      const matchesFilter = currentFilter === 'all' || card.dataset.severity === currentFilter;
+      const matchesSearch = !searchTerm || card.textContent.toLowerCase().includes(searchTerm);
+      const isVisible = matchesFilter && matchesSearch;
+      
+      card.style.display = isVisible ? 'block' : 'none';
+      if (isVisible) visibleCount++;
+    });
+    
+    noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+  };
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      filterCards();
+    });
+  });
+
+  let debounceTimer;
+  searchInput.addEventListener('input', (e) => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      searchTerm = e.target.value.toLowerCase();
+      filterCards();
+    }, 150);
+  });
+})();
+</script>
+
+</body>
+</html>
