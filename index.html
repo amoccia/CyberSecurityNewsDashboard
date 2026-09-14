@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyber Security News Dashboard</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --primary: #00ff9f;
+      --primary-dim: #00cc7a;
+      --card-bg: #111;
+      --border: rgba(0, 255, 159, 0.2);
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--primary);
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.5;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      font-size: clamp(1.2rem, 4vw, 2rem);
+      text-shadow: 0 0 20px var(--primary);
+      margin: 0 0 10px 0;
+    }
+    .header time {
+      font-size: 0.85rem;
+      opacity: 0.7;
+    }
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 25px;
+    }
+    .stat {
+      padding: 8px 15px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      background: var(--card-bg);
+    }
+    .stat.critical { border-color: #ff4444; }
+    .stat.high { border-color: #ff8c00; }
+    .stat.medium { border-color: #ffd700; }
+    .stat.low { border-color: var(--primary-dim); }
+    .controls {
+      max-width: 900px;
+      margin: 0 auto 25px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .search-wrapper {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+    .search-wrapper::before {
+      content: '🔍';
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+    }
+    input {
+      width: 100%;
+      padding: 10px 10px 10px 35px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--primary);
+      font-family: inherit;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .filter-buttons {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 10px 15px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--primary);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    button:hover, button.active {
+      background: var(--primary);
+      color: var(--bg);
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      display: grid;
+      gap: 15px;
+    }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 15px;
+      background: var(--card-bg);
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .index {
+      font-size: 12px;
+      opacity: 0.6;
+    }
+    .badge {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    .critical { background: #ff4444; color: #fff; }
+    .high { background: #ff8c00; color: #000; }
+    .medium { background: #ffd700; color: #000; }
+    .low { background: var(--primary-dim); color: #000; }
+    .card-title {
+      display: block;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: bold;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .card-title:hover { text-decoration: underline; }
+    .card-desc {
+      font-size: 12px;
+      color: var(--primary-dim);
+      margin: 0;
+    }
+    .no-results {
+      text-align: center;
+      padding: 40px;
+      opacity: 0.6;
+      display: none;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      opacity: 0.6;
+      text-align: center;
+    }
+    @media (max-width: 600px) {
+      .controls { flex-direction: column; }
+      .filter-buttons { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🛡️ CYBER SECURITY NEWS DASHBOARD</h1>
+  <time datetime="2026-09-14T21:03:09.965Z">14/09/2026, 21:03</time>
+</div>
+
+<div class="stats">
+  <div class="stat">📊 Totale: <strong>143</strong></div>
+  <div class="stat critical">🔴 Critical: <strong>5</strong></div>
+  <div class="stat high">🟠 High: <strong>2</strong></div>
+  <div class="stat medium">🟡 Medium: <strong>5</strong></div>
+  <div class="stat low">🟢 Low: <strong>131</strong></div>
+</div>
+
+<div class="controls">
+  <div class="search-wrapper">
+    <input type="search" id="search" placeholder="Cerca nelle notizie..." aria-label="Cerca">
+  </div>
+  <div class="filter-buttons">
+    <button class="active" data-filter="all">Tutte</button>
+    <button data-filter="critical">Critical</button>
+    <button data-filter="high">High</button>
+    <button data-filter="medium">Medium</button>
+    <button data-filter="low">Low</button>
+  </div>
+</div>
+
+<div class="container" id="cards">
+  
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#01</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-125-hackers-exploit-fortigate-ssl-vpn-vulnerability-to.html" class="card-title">Hackers Exploit FortiGate SSL-VPN Vulnerability to Attack Broadband Provider</a>
+      <p class="card-desc">Researchers have uncovered an exposed attacker-controlled staging server containing evidence of a wide-ranging intrusion targeting 3BB, the ...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#02</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-129-microsoft-offers-up-to-30-000-for-critical-ai-flaw.html" class="card-title">Microsoft Offers Up to $30,000 for Critical AI Flaws in Dynamics 365 and Power Platform</a>
+      <p class="card-desc">Microsoft is offering security researchers up to $30,000 for finding critical AI vulnerabilities in Dynamics 365 and Power Platform, sharpen...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#03</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-130-aws-systems-manager-agent-vulnerability-allows-att.html" class="card-title">AWS Systems Manager Agent Vulnerability Allows Attackers to Bypass Port-Forwarding Restrictions</a>
+      <p class="card-desc">A critical vulnerability in the AWS Systems Manager Agent could let authenticated attackers bypass remote-host port-forwarding restrictions ...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#04</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-138-the-race-to-control-ai-and-protect-what-makes-us-h.html" class="card-title">The Race to Control AI and Protect What Makes Us Human</a>
+      <p class="card-desc">As researchers warn that misaligned AI could threaten human survival, even beneficial systems may erode the critical thinking that defines o...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#05</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-139-chinese-hackers-exploit-critical-tencent-software-.html" class="card-title">Chinese Hackers Exploit Critical Tencent Software Flaw for One-Click Code Execution</a>
+      <p class="card-desc">The Chinese-language input method editor for Windows can allow attackers to execute arbitrary code remotely. The post Chinese Hackers Exploi...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#06</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-128-nintendo-switch-vulnerability-allows-attackers-to-.html" class="card-title">Nintendo Switch Vulnerability Allows Attackers to Run Unauthorized Code on Your Console</a>
+      <p class="card-desc">Nintendo has patched a high-severity vulnerability in the original Nintendo Switch that could let a nearby attacker execute unauthorized cod...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#07</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-134-new-zcopyreaper-linux-kernel-vulnerability-enables.html" class="card-title">New ZcopyReaper Linux Kernel Vulnerability Enables Privilege Escalation Attacks</a>
+      <p class="card-desc">A new Linux kernel vulnerability dubbed ZcopyReaper allows an unprivileged local attacker to escalate privileges and potentially gain root-l...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#08</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-16-cve-2026-82019-triplelift-postmessage-video-bundle.html" class="card-title">CVE-2026-82019 | TripleLift postMessage video-bundle.js cross site scripting</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in TripleLift. Riguarda una funzione sconosciuta del file video-bundle.js del...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#09</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-43-cve-2026-90931-laradashboard-fino-a-1-2-2-svg-file.html" class="card-title">CVE-2026-90931 | LaraDashboard fino a 1.2.2 SVG File cross site scripting</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in LaraDashboard fino a 1.2.2. Risulta coinvolta una funzione sconosciuta del comp...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#10</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-48-cve-2026-90957-circl-misp-fino-a-2-5-45-svg-image-.html" class="card-title">CVE-2026-90957 | CIRCL MISP fino a 2.5.45 SVG image cross site scripting (EUVD-2026-77467)</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in CIRCL MISP fino a 2.5.45. Si considera coinvolta una funzione sconosciu...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#11</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-82-cve-2026-78318-apache-syncope-console-enduser-cros.html" class="card-title">CVE-2026-78318 | Apache Syncope Console/Enduser cross site scripting</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in Apache Syncope. Riguarda una funzione sconosciuta del componente Console/Endus...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#12</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-92-cve-2026-90893-circl-misp-fino-a-2-5-45-usersettin.html" class="card-title">CVE-2026-90893 | CIRCL MISP fino a 2.5.45 UserSettingsController setHomePage cross site request forgery (979337b18 / EUVD-2026-77341)</a>
+      <p class="card-desc">In CIRCL MISP fino a 2.5.45 stata rilevata una vulnerabilità di livello problematico. Da questa vulnerabilità è interessato la funzione setH...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#13</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-1-cve-2026-57124-mervinpraison-praisonai-fino-a-4-6-.html" class="card-title">CVE-2026-57124 | MervinPraison PraisonAI fino a 4.6.58 MCP Connect /api/mcp/connect args escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in MervinPraison PraisonAI fino a 4.6.58. Risulta coinvolta una funzione sconos...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#14</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-2-cve-2026-57132-mervinpraison-praisonai-fino-a-4-6-.html" class="card-title">CVE-2026-57132 | MervinPraison PraisonAI fino a 4.6.61 Agent Invoke Endpoint invoke verify_token PRAISONAI_CALL_AUTH autenticazione debole</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in MervinPraison PraisonAI fino a 4.6.61. Da questa vulnerabilità è interess...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#15</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-3-cve-2026-57119-mervinpraison-praisonai-fino-a-4-6-.html" class="card-title">CVE-2026-57119 | MervinPraison PraisonAI fino a 4.6.58 Jobs API /api/v1/runs directory traversal</a>
+      <p class="card-desc">Un punto di debole di livello critico è stato rilevato in MervinPraison PraisonAI fino a 4.6.58. É interessato una funzione sconosciuta del ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#16</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-4-cve-2026-57145-mervinpraison-praisonai-fino-a-4-6-.html" class="card-title">CVE-2026-57145 | MervinPraison PraisonAI fino a 4.6.61 multiedit multiedit.py open filepath directory traversal</a>
+      <p class="card-desc">Un punto di criticita di livello critico è stato rilevato in MervinPraison PraisonAI fino a 4.6.61. Riguarda la funzione Aperto del file src...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#17</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-5-cve-2026-57131-mervinpraison-praisonai-fino-a-4-6-.html" class="card-title">CVE-2026-57131 | MervinPraison PraisonAI fino a 4.6.57 Router Mounting praisonai/jobs/server.py praisonai.jobs.server.create_app escalationi di privilegi</a>
+      <p class="card-desc">In MervinPraison PraisonAI fino a 4.6.57 è stato trovato un punto critico di livello critico. Viene interessata una funzione sconosciuta app...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#18</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-6-cve-2026-57127-mervinpraison-praisonai-fino-a-4-6-.html" class="card-title">CVE-2026-57127 | MervinPraison PraisonAI fino a 4.6.57 APIKeyAuthMiddleware/JWTAuthMiddleware autenticazione debole</a>
+      <p class="card-desc">In MervinPraison PraisonAI fino a 4.6.57 è stata rilevato un punto critico di livello critico. Si considera coinvolta una funzione sconosciu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#19</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-7-cve-2026-57122-mervinpraison-praisonai-fino-a-4-6-.html" class="card-title">CVE-2026-57122 | MervinPraison PraisonAI fino a 4.6.58 WhatsApp/Linear bot webhook handlers autenticazione debole</a>
+      <p class="card-desc">Un punto critico di livello critico è stato rilevato in MervinPraison PraisonAI fino a 4.6.58. Risulta coinvolta una funzione sconosciuta de...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#20</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-8-cve-2026-56839-mervinpraison-praisonai-fino-a-4-6-.html" class="card-title">CVE-2026-56839 | MervinPraison PraisonAI fino a 4.6.58 CODE_TOOLS wrappers read_file/search_replace/apply_diff workspace directory traversal</a>
+      <p class="card-desc">In MervinPraison PraisonAI fino a 4.6.58 stata rilevata una vulnerabilità di livello problematico. Da questa vulnerabilità è interessato la ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#21</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-9-cve-2026-57129-mervinpraison-praisonaiagents-fino-.html" class="card-title">CVE-2026-57129 | MervinPraison praisonaiagents fino a 1.6.58 MentionsParser MentionsParser._process_file_mention file_path directory traversal</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in MervinPraison praisonaiagents fino a 1.6.58. É interessato la funzione Mention...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#22</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-10-cve-2026-59570-zscaler-client-connector-prima-andr.html" class="card-title">CVE-2026-59570 | Zscaler Client Connector prima Android: 4.2.0.152/ChromeOS: 4.2.0.152 escalationi di privilegi</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in Zscaler Client Connector. Riguarda una funzione sconosciuta. Attraverso l&#39;infl...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#23</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-11-cve-2026-59569-zscaler-client-connector-fino-a-4-2.html" class="card-title">CVE-2026-59569 | Zscaler Client Connector fino a 4.2.0.149 escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Zscaler Client Connector. Viene interessata una funzione sconosciuta. Pe...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#24</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-12-cve-2026-57126-mervinpraison-praisonai-fino-a-1-6-.html" class="card-title">CVE-2026-57126 | MervinPraison PraisonAI fino a 1.6.58 SpiderTools SpiderTools._validate_url escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come critico in MervinPraison PraisonAI fino a 1.6.58. Si considera coinvolta una funzione s...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#25</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-13-cve-2026-57123-mervinpraison-praisonaiagents-fino-.html" class="card-title">CVE-2026-57123 | MervinPraison praisonaiagents fino a 1.6.58 Server-Sent Events ToolsMCPServer.run_sse/launch_tools_mcp_server escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in MervinPraison praisonaiagents fino a 1.6.58. Risulta coinvolta una funzione ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#26</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-14-cve-2026-25687-zscaler-client-connector-prima-4-6-.html" class="card-title">CVE-2026-25687 | Zscaler Client Connector prima 4.6.0.486/4.7.0.350/4.8.0.267/4.9.0.412 ZPA tunnel handler race condition</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come estremamente critico in Zscaler Client Connector. Da questa vulnerabilità è interess...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#27</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-15-cve-2026-57120-mervinpraison-praisonaiagents-fino-.html" class="card-title">CVE-2026-57120 | MervinPraison praisonaiagents fino a 1.6.58 Sandbox execute_code escalationi di privilegi</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in MervinPraison praisonaiagents fino a 1.6.58. É interessato la funzione execut...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#28</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-17-cve-2026-57115-mervinpraison-praisonai-fino-a-1-6-.html" class="card-title">CVE-2026-57115 | MervinPraison Praisonai fino a 1.6.58 Spider Tools SpiderTools.scrape_page Redirect</a>
+      <p class="card-desc">In MervinPraison Praisonai fino a 1.6.58 è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciut...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#29</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-18-cve-2026-7848-alior-bank-raty-fino-a-8-1-10-9-0-6-.html" class="card-title">CVE-2026-7848 | Alior Bank raty fino a 8.1.10/9.0.6 iniezione SQL</a>
+      <p class="card-desc">In Alior Bank raty fino a 8.1.10/9.0.6 è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzione sconos...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#30</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-19-cve-2026-15600-alior-bank-raty-fino-a-8-1-11-9-0-7.html" class="card-title">CVE-2026-15600 | Alior Bank raty fino a 8.1.11/9.0.7 toggleCategoryPromotionAction Stato iniezione SQL</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in Alior Bank raty fino a 8.1.11/9.0.7. Risulta coinvolta una funzione sconosciuta...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#31</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-20-cve-2026-57128-mervinpraison-praisonai-fino-a-1-6-.html" class="card-title">CVE-2026-57128 | MervinPraison PraisonAI fino a 1.6.57 SSE Server server.py autenticazione debole</a>
+      <p class="card-desc">In MervinPraison PraisonAI fino a 1.6.57 stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato una funz...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#32</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-21-cve-2026-12985-mattermost-fino-a-11-7-7-11-8-4-11-.html" class="card-title">CVE-2026-12985 | Mattermost fino a 11.7.7/11.8.4/11.9.0 Dynamic Client Registration Redirect</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in Mattermost fino a 11.7.7/11.8.4/11.9.0. É interessato una funzione sconosciuta...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#33</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-22-cve-2026-57130-mervinpraison-praisonaiagents-fino-.html" class="card-title">CVE-2026-57130 | MervinPraison praisonaiagents fino a 1.6.58 Email Tools email_tools.py from_addr/subject/query escalationi di privilegi</a>
+      <p class="card-desc">Una vulnerabilità di livello critico è stata rilevata in MervinPraison praisonaiagents fino a 1.6.58. Riguarda una funzione sconosciuta del ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#34</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-23-cve-2026-57125-mervinpraison-praisonai-praisonaiag.html" class="card-title">CVE-2026-57125 | MervinPraison PraisonAI/praisonaiagents Jobs API /api/v1/runs execute_command agent_yaml escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come critico in MervinPraison PraisonAI and praisonaiagents. Viene interessata una funzione s...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#35</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-24-cve-2026-82428-apache-storm-client-fino-a-3-0-x-bl.html" class="card-title">CVE-2026-82428 | Apache Storm Client fino a 3.0.x Blob Storage escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come critico in Apache Storm Client fino a 3.0.x. Si considera coinvolta una funzione sconos...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#36</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-25-cve-2026-86348-mattermost-fino-a-11-9-x-negazione-.html" class="card-title">CVE-2026-86348 | Mattermost fino a 11.9.x negazione del servizio</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Mattermost fino a 10.11.22/11.7.7/11.8.4/11.9.0/11.9.x. Risulta coinvol...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#37</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-26-cve-2026-90940-novel-plus-fino-a-5-3-3-cachecontro.html" class="card-title">CVE-2026-90940 | novel-plus fino a 5.3.3 CacheController CacheController.refreshCache negazione del servizio (EUVD-2026-77484)</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in novel-plus fino a 5.3.3. Da questa vulnerabilità è interessato la fu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#38</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-27-cve-2026-90939-novel-plus-fino-a-5-3-3-sys-user-li.html" class="card-title">CVE-2026-90939 | novel-plus fino a 5.3.3 /sys/user/list rivelazione di informazioni (EUVD-2026-77483)</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in novel-plus fino a 5.3.3. É interessato una funzione sconosciuta del file /sys...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#39</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-28-cve-2026-82920-mattermost-fino-a-11-7-7-11-8-4-11-.html" class="card-title">CVE-2026-82920 | Mattermost fino a 11.7.7/11.8.4/11.9.0 access_control_policies escalationi di privilegi (EUVD-2026-77487)</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Mattermost fino a 11.7.7/11.8.4/11.9.0. Riguarda una funzione sconosciuta ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#40</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-29-cve-2026-86349-mattermost-fino-a-10-11-22-11-7-8-1.html" class="card-title">CVE-2026-86349 | Mattermost fino a 10.11.22/11.7.8/11.8.4/11.9.0 Markdown parser negazione del servizio</a>
+      <p class="card-desc">In Mattermost fino a 10.11.22/11.7.8/11.8.4/11.9.0 è stato trovato un punto critico di livello problematico. Viene interessata una funzione ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#41</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-30-cve-2026-90941-novel-plus-fino-a-5-3-3-bookcontrol.html" class="card-title">CVE-2026-90941 | novel-plus fino a 5.3.3 BookController bookId/bookName escalationi di privilegi (EUVD-2026-77485)</a>
+      <p class="card-desc">In novel-plus fino a 5.3.3 è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzione sconosciuta nel co...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#42</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-31-cve-2026-82441-apache-storm-nimbus-fino-a-3-0-x-es.html" class="card-title">CVE-2026-82441 | Apache Storm Nimbus fino a 3.0.x escalationi di privilegi (EUVD-2026-77486)</a>
+      <p class="card-desc">Un punto critico di livello estremamente critico è stato rilevato in Apache Storm Nimbus fino a 3.0.x. Risulta coinvolta una funzione sconos...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#43</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-32-cve-2026-7208-yealink-sip-t33g-prima-124-87-0-0-fi.html" class="card-title">CVE-2026-7208 | Yealink SIP-T33G prima 124.87.0.0 File Deletion Endpoint race condition</a>
+      <p class="card-desc">In Yealink SIP-T33G stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato una funzione sconosciuta del ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#44</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-33-cve-2026-90949-red-hat-enterprise-linux-psp-file-l.html" class="card-title">CVE-2026-90949 | Red Hat Enterprise Linux PSP file loader buffer overflow</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello critico in Red Hat Enterprise Linux. É interessato una funzione sconosciuta del componente PSP...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#45</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-34-cve-2026-90948-red-hat-enterprise-linux-ico-file-l.html" class="card-title">CVE-2026-90948 | Red Hat Enterprise Linux ICO file loader buffer overflow</a>
+      <p class="card-desc">Una vulnerabilità di livello estremamente critico è stata rilevata in Red Hat Enterprise Linux. Riguarda una funzione sconosciuta del compon...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#46</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-35-cve-2026-90961-misp-fino-a-2-5-45-ldapauth-linotpa.html" class="card-title">CVE-2026-90961 | MISP fino a 2.5.45 LdapAuth/LinOTPAuth _checkFields email/password autenticazione debole (0ee058548 / EUVD-2026-77473)</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come critico in MISP fino a 2.5.45. Viene interessata una funzione sconosciuta appartenente a...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#47</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-36-cve-2026-90938-langbot-app-langbot-fino-a-0-4-17-p.html" class="card-title">CVE-2026-90938 | langbot-app LangBot fino a 0.4.17 Plugin Runtime plugin_debug_key autenticazione debole</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come critico in langbot-app LangBot fino a 0.4.17. Si considera coinvolta una funzione scono...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#48</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-37-cve-2026-90933-laradashboard-fino-a-1-2-2-local-li.html" class="card-title">CVE-2026-90933 | LaraDashboard fino a 1.2.2 Local License API /api/admin/licenses/show autenticazione debole</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in LaraDashboard fino a 1.2.2. Risulta coinvolta una funzione sconosciuta del f...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#49</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-38-cve-2026-90935-froxlor-fino-a-2-3-6-mysql-server-e.html" class="card-title">CVE-2026-90935 | Froxlor fino a 2.3.6 mysql_server escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in Froxlor fino a 2.3.6. Da questa vulnerabilità è interessato una funz...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#50</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-39-cve-2026-90934-espocrm-fino-a-10-0-3-attendees-end.html" class="card-title">CVE-2026-90934 | EspoCRM fino a 10.0.3 Attendees Endpoint escalationi di privilegi</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in EspoCRM fino a 10.0.3. É interessato una funzione sconosciuta del componente ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#51</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-40-cve-2026-90936-froxlor-fino-a-2-3-6-sender-alias-l.html" class="card-title">CVE-2026-90936 | Froxlor fino a 2.3.6 Sender Alias Lookups customer_email.php senderid rivelazione di informazioni</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Froxlor fino a 2.3.6. Riguarda una funzione sconosciuta del file customer_...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#52</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-41-cve-2026-90937-froxlor-fino-a-2-2-4-redirect.html" class="card-title">CVE-2026-90937 | Froxlor fino a 2.2.4 Redirect</a>
+      <p class="card-desc">In Froxlor fino a 2.2.4 è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciuta appartenente al...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#53</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-42-cve-2026-78299-eclipse-embedded-cdt-fino-a-5-x-6-7.html" class="card-title">CVE-2026-78299 | Eclipse Embedded CDT fino a 5.x/6.7 directory traversal</a>
+      <p class="card-desc">In Eclipse Embedded CDT fino a 5.x/6.7 è stata rilevato un punto critico di livello critico. Si considera coinvolta una funzione sconosciuta...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#54</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-44-cve-2026-90930-filebrowser-file-browser-fino-a-2-6.html" class="card-title">CVE-2026-90930 | filebrowser File Browser fino a 2.63.23 Symbolic Link Resolution escalationi di privilegi</a>
+      <p class="card-desc">In filebrowser File Browser fino a 2.63.23 stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato una fu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#55</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-45-cve-2026-90929-filebrowser-file-browser-fino-a-2-6.html" class="card-title">CVE-2026-90929 | Filebrowser File Browser fino a 2.63.23 Direct-Upload Endpoint http/resource.go WriteFile escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in Filebrowser File Browser fino a 2.63.23. É interessato la funzione WriteFile d...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#56</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-46-cve-2026-90928-file-browser-fino-a-2-63-23-subtitl.html" class="card-title">CVE-2026-90928 | File Browser fino a 2.63.23 Subtitle Conversion Endpoint negazione del servizio (EUVD-2026-77446)</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in File Browser fino a 2.63.23. Riguarda una funzione sconosciuta del componente ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#57</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-47-cve-2026-90927-filebrowser-fino-a-2-63-23-websocke.html" class="card-title">CVE-2026-90927 | Filebrowser fino a 2.63.23 WebSocket Message /api/command negazione del servizio</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Filebrowser fino a 2.63.23. Viene interessata una funzione sconosciuta a...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#58</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-49-cve-2026-90932-laradashboard-fino-a-1-2-2-core-upg.html" class="card-title">CVE-2026-90932 | LaraDashboard fino a 1.2.2 Core Upgrade Backup storage/app/core-backups deleteBackup backup_file directory traversal</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in LaraDashboard fino a 1.2.2. Risulta coinvolta una funzione sconosciuta del f...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#59</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-50-cve-2026-77147-apache-syncope-fino-a-3-0-16-4-0-7-.html" class="card-title">CVE-2026-77147 | Apache Syncope fino a 3.0.16/4.0.7/4.1.2 Groovy Command escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in Apache Syncope fino a 3.0.16/4.0.7/4.1.2. Da questa vulnerabilità è ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#60</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-51-cve-2024-58383-froxlor-fino-a-2-1-x-configuration-.html" class="card-title">CVE-2024-58383 | Froxlor fino a 2.1.x Configuration Template mysql.conf cifratura debole</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in Froxlor fino a 2.1.x. É interessato una funzione sconosciuta del file /etc/pu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#61</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-52-cve-2026-90955-misp-fino-a-2-5-45-cli-shell-escala.html" class="card-title">CVE-2026-90955 | MISP fino a 2.5.45 CLI Shell escalationi di privilegi</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in MISP fino a 2.5.45. Riguarda una funzione sconosciuta del componente CLI S...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#62</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-53-cve-2026-12258-hiperdino-rest-api-1-0-escalationi-.html" class="card-title">CVE-2026-12258 | Hiperdino REST API 1.0 escalationi di privilegi</a>
+      <p class="card-desc">In Hiperdino REST API 1.0 è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciuta. Attraverso l...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#63</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-54-cve-2026-90919-modeltc-lightllm-fino-a-1-2-0-visua.html" class="card-title">CVE-2026-90919 | ModelTC LightLLM fino a 1.2.0 visual_register WebSocket endpoint pickle.loads escalationi di privilegi</a>
+      <p class="card-desc">In ModelTC LightLLM fino a 1.2.0 è stata rilevato un punto critico di livello critico. Si considera coinvolta una funzione sconosciuta nel c...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#64</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-55-cve-2026-14259-mattermost-fino-a-10-11-22-11-7-7-1.html" class="card-title">CVE-2026-14259 | Mattermost fino a 10.11.22/11.7.7/11.8.4/11.9.0 Board escalationi di privilegi</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in Mattermost fino a 10.11.22/11.7.7/11.8.4/11.9.0. Risulta coinvolta una funzione...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#65</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-56-cve-2026-9812-mattermost-fino-a-10-11-22-11-7-7-11.html" class="card-title">CVE-2026-9812 | Mattermost fino a 10.11.22/11.7.7/11.8.4/11.9.0 Playbooks escalationi di privilegi</a>
+      <p class="card-desc">In Mattermost fino a 10.11.22/11.7.7/11.8.4/11.9.0 stata rilevata una vulnerabilità di livello problematico. Da questa vulnerabilità è inter...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#66</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-57-cve-2026-21391-ping-identity-pingam-fino-a-8-1-0-a.html" class="card-title">CVE-2026-21391 | Ping Identity PingAM fino a 8.1.0 autenticazione debole</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello critico in Ping Identity PingAM fino a 8.1.0. É interessato una funzione sconosciuta. La manip...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#67</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-58-cve-2026-79701-joomshaper-sp-page-builder-extensio.html" class="card-title">CVE-2026-79701 | Joomshaper SP Page Builder Extension fino a 6.9.0 CAPTCHA Plugin onCheckAnswer view_type autenticazione debole</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in Joomshaper SP Page Builder Extension fino a 6.9.0. Riguarda la funzione onChec...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#68</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-59-cve-2026-78375-joomshaper-sp-page-builder-extensio.html" class="card-title">CVE-2026-78375 | JoomShaper SP Page Builder Extension fino a 6.9.0 Content Plugin onContentAfterSave sppagebuilder_article_id iniezione SQL</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in JoomShaper SP Page Builder Extension fino a 6.9.0. Viene interessata una...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#69</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-60-cve-2026-81566-joomshaper-sp-page-builder-extensio.html" class="card-title">CVE-2026-81566 | Joomshaper SP Page Builder Extension fino a 6.9.0 Menu Item Creation save menuid escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Joomshaper SP Page Builder Extension fino a 6.9.0. Si considera coinvol...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#70</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-61-cve-2026-81565-joomshaper-sp-page-builder-extensio.html" class="card-title">CVE-2026-81565 | Joomshaper SP Page Builder Extension fino a 6.9.0 Media Upload upload folder directory traversal</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Joomshaper SP Page Builder Extension fino a 6.9.0. Risulta coinvolta un...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#71</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-62-cve-2026-79700-joomshaper-sp-page-builder-pro-exte.html" class="card-title">CVE-2026-79700 | Joomshaper SP Page Builder Pro Extension fino a 5.1.4/6.9.0 optin_form captcha_question/captcha_answer autenticazione debole</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in Joomshaper SP Page Builder Pro Extension fino a 5.1.4/6.9.0. Da questa vu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#72</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-63-cve-2026-81564-joomshaper-sp-page-builder-extensio.html" class="card-title">CVE-2026-81564 | JoomShaper SP Page Builder Extension fino a 6.9.0 Media Rename directory traversal</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in JoomShaper SP Page Builder Extension fino a 6.9.0. É interessato una funzione...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#73</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-64-cve-2026-13417-mattermost-fino-a-10-11-22-11-7-7-1.html" class="card-title">CVE-2026-13417 | Mattermost fino a 10.11.22/11.7.7/11.8.4/11.9.0 Boards fields.properties escalationi di privilegi</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Mattermost fino a 10.11.22/11.7.7/11.8.4/11.9.0. Riguarda una funzione sco...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#74</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-65-cve-2026-90890-asrock-polychrome-sync-rgb-for-mb-r.html" class="card-title">CVE-2026-90890 | ASRock Polychrome SYNC RGB for MB RGB for VGA Driver negazione del servizio</a>
+      <p class="card-desc">In ASRock Polychrome SYNC RGB for MB RGB for VGA è stato trovato un punto critico di livello problematico. Viene interessata una funzione sc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#75</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-66-cve-2026-90891-asrock-polychrome-sync-rgb-for-mb-r.html" class="card-title">CVE-2026-90891 | ASRock Polychrome SYNC/RGB for MB/RGB for VGA IOCTL escalationi di privilegi</a>
+      <p class="card-desc">In ASRock Polychrome SYNC, RGB for MB and RGB for VGA è stata rilevato un punto critico di livello critico. Si considera coinvolta una funzi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#76</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-67-cve-2026-8821-mattermost-fino-a-10-11-22-11-7-7-11.html" class="card-title">CVE-2026-8821 | Mattermost fino a 10.11.22/11.7.7/11.8.4/11.9.0 Playbook Run escalationi di privilegi</a>
+      <p class="card-desc">Un punto critico di livello critico è stato rilevato in Mattermost fino a 10.11.22/11.7.7/11.8.4/11.9.0. Risulta coinvolta una funzione scon...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#77</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-68-cve-2026-20773-ping-identity-pingfederate-fino-a-1.html" class="card-title">CVE-2026-20773 | Ping Identity PingFederate fino a 13.0.1 Expression Evaluation escalationi di privilegi</a>
+      <p class="card-desc">In Ping Identity PingFederate fino a 13.0.1 stata rilevata una vulnerabilità di livello problematico. Da questa vulnerabilità è interessato ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#78</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-69-cve-2026-10542-mattermost-fino-a-10-11-22-11-7-7-1.html" class="card-title">CVE-2026-10542 | Mattermost fino a 10.11.22/11.7.7/11.8.4/11.9.0 Channel Action Update escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello critico in Mattermost fino a 10.11.22/11.7.7/11.8.4/11.9.0. É interessato una funzione sconosc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#79</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-70-cve-2026-5132-mattermost-fino-a-11-9-x-negazione-d.html" class="card-title">CVE-2026-5132 | Mattermost fino a 11.9.x negazione del servizio</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in Mattermost fino a 10.11.22/11.7.7/11.8.4/11.9.0/11.9.x. Riguarda una funzione ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#80</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-71-cve-2026-15814-mattermost-fino-a-10-11-22-11-7-7-1.html" class="card-title">CVE-2026-15814 | Mattermost fino a 10.11.22/11.7.7/11.8.4/11.9.0 Image negazione del servizio</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Mattermost fino a 10.11.22/11.7.7/11.8.4/11.9.0. Viene interessata una f...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#81</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-72-cve-2026-10556-mattermost-fino-a-10-11-22-11-7-7-1.html" class="card-title">CVE-2026-10556 | Mattermost fino a 10.11.22/11.7.7/11.8.4/11.9.0 Calendar Plugin escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Mattermost fino a 10.11.22/11.7.7/11.8.4/11.9.0. Si considera coinvolta...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#82</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-73-cve-2026-90898-maximhq-bifrost-fino-a-2-0-x-mcp-cl.html" class="card-title">CVE-2026-90898 | maximhq Bifrost fino a 2.0.x MCP Client Registration /api/mcp/client escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in maximhq Bifrost fino a 2.0.x. Risulta coinvolta una funzione sconosciuta del...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#83</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-74-cve-2026-12882-mattermost-fino-a-10-11-22-11-7-7-1.html" class="card-title">CVE-2026-12882 | Mattermost fino a 10.11.22/11.7.7/11.8.4/11.9.0 Markdown Autolink Parser negazione del servizio</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in Mattermost fino a 10.11.22/11.7.7/11.8.4/11.9.0. Da questa vulnerabi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#84</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-75-cve-2026-89180-thinking-software-efence-iniezione-.html" class="card-title">CVE-2026-89180 | Thinking Software EFence iniezione SQL</a>
+      <p class="card-desc">Un punto di debole di livello critico è stato rilevato in Thinking Software EFence. É interessato una funzione sconosciuta. Per causa della ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#85</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-76-cve-2026-14344-mattermost-fino-a-10-11-22-11-7-7-1.html" class="card-title">CVE-2026-14344 | Mattermost fino a 10.11.22/11.7.7/11.8.4/11.9.0 Board escalationi di privilegi</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Mattermost fino a 10.11.22/11.7.7/11.8.4/11.9.0. Riguarda una funzione sco...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#86</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-77-cve-2026-11993-mattermost-fino-a-10-11-22-11-7-7-1.html" class="card-title">CVE-2026-11993 | Mattermost fino a 10.11.22/11.7.7/11.8.4/11.9.0 negazione del servizio</a>
+      <p class="card-desc">In Mattermost fino a 10.11.22/11.7.7/11.8.4/11.9.0 è stato trovato un punto critico di livello problematico. Viene interessata una funzione ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#87</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-78-cve-2026-72524-apache-doris-fino-a-3-1-0-4-0-7-4-1.html" class="card-title">CVE-2026-72524 | Apache Doris fino a 3.1.0/4.0.7/4.1.3 escalationi di privilegi</a>
+      <p class="card-desc">In Apache Doris fino a 3.1.0/4.0.7/4.1.3 è stata rilevato un punto critico di livello critico. Si considera coinvolta una funzione sconosciu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#88</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-79-cve-2026-68570-apache-doris-fino-a-2-0-0-3-0-0-4-0.html" class="card-title">CVE-2026-68570 | Apache Doris fino a 2.0.0/3.0.0/4.0.7/4.1.3 escalationi di privilegi</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in Apache Doris fino a 2.0.0/3.0.0/4.0.7/4.1.3. Risulta coinvolta una funzione sco...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#89</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-80-cve-2026-90894-parallels-desktop-fino-a-26-4-0-27-.html" class="card-title">CVE-2026-90894 | Parallels Desktop fino a 26.4.0/27.0.0 prl_disp_service prl_disp_service.socket PrlSrv_InstallAppliance sVmParentPath escalationi di privilegi (EUVD-2026-77346)</a>
+      <p class="card-desc">In Parallels Desktop fino a 26.4.0/27.0.0 stata rilevata una vulnerabilità di livello estremamente critico. Da questa vulnerabilità è intere...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#90</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-81-cve-2026-90895-misp-fino-a-2-5-45-cli-shell-feedsc.html" class="card-title">CVE-2026-90895 | MISP fino a 2.5.45 CLI Shell FeedsController::view escalationi di privilegi (EUVD-2026-77344)</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello critico in MISP fino a 2.5.45. É interessato la funzione FeedsController::view del componente ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#91</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-83-cve-2026-87802-apache-syncope-oauth2-autenticazion.html" class="card-title">CVE-2026-87802 | Apache Syncope OAuth2 autenticazione debole</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come critico in Apache Syncope. Viene interessata una funzione sconosciuta appartenente al co...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#92</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-84-cve-2026-87785-apache-syncope-autenticazione-debol.html" class="card-title">CVE-2026-87785 | Apache Syncope autenticazione debole</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come critico in Apache Syncope. Si considera coinvolta una funzione sconosciuta. Mediante la...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#93</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-85-cve-2026-86460-apache-syncope-fiql-search-escalati.html" class="card-title">CVE-2026-86460 | Apache Syncope FIQL Search escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in Apache Syncope. Risulta coinvolta una funzione sconosciuta del componente FI...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#94</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-86-cve-2026-82232-apache-syncope-task-search-sort-ini.html" class="card-title">CVE-2026-82232 | Apache Syncope Task Search sort iniezione SQL</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in Apache Syncope. Da questa vulnerabilità è interessato una funzione sconos...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#95</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-87-cve-2026-78330-apache-syncope-escalationi-di-privi.html" class="card-title">CVE-2026-78330 | Apache Syncope escalationi di privilegi</a>
+      <p class="card-desc">Un punto di debole di livello critico è stato rilevato in Apache Syncope. É interessato una funzione sconosciuta. La gestione determina esca...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#96</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-88-cve-2026-77181-apache-syncope-escalationi-di-privi.html" class="card-title">CVE-2026-77181 | Apache Syncope escalationi di privilegi</a>
+      <p class="card-desc">Un punto di criticita di livello critico è stato rilevato in Apache Syncope. Riguarda una funzione sconosciuta. L’alterazione causa escalati...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#97</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-89-cve-2026-87779-apache-syncope-rivelazione-di-infor.html" class="card-title">CVE-2026-87779 | Apache Syncope rivelazione di informazioni</a>
+      <p class="card-desc">In Apache Syncope è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciuta. La manipolazione por...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#98</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-90-cve-2026-78336-apache-syncope-oidcc4ui-provider-li.html" class="card-title">CVE-2026-78336 | Apache Syncope OIDCC4UI Provider List rivelazione di informazioni</a>
+      <p class="card-desc">In Apache Syncope è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzione sconosciuta nel componente ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#99</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-91-cve-2026-77883-apache-syncope-rivelazione-di-infor.html" class="card-title">CVE-2026-77883 | Apache Syncope rivelazione di informazioni</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in Apache Syncope. Risulta coinvolta una funzione sconosciuta. Per causa della man...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#100</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-93-cve-2026-77051-apache-syncope-audit-events-entityk.html" class="card-title">CVE-2026-77051 | Apache Syncope Audit Events entityKey/opEvent iniezione SQL</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello critico in Apache Syncope. É interessato una funzione sconosciuta del componente Audit Events....</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#101</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-94-cve-2026-75030-apache-syncope-escalationi-di-privi.html" class="card-title">CVE-2026-75030 | Apache Syncope escalationi di privilegi</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in Apache Syncope. Riguarda una funzione sconosciuta. La manipolazione di un inpu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#102</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-95-cve-2026-75015-apache-syncope-cifratura-debole.html" class="card-title">CVE-2026-75015 | Apache Syncope cifratura debole</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Apache Syncope. Viene interessata una funzione sconosciuta. La gestione ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#103</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-96-cve-2026-73579-apache-syncope-any-search-escalatio.html" class="card-title">CVE-2026-73579 | Apache Syncope Any search escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Apache Syncope. Si considera coinvolta una funzione sconosciuta nel com...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#104</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-97-cve-2026-73470-apache-syncope-escalationi-di-privi.html" class="card-title">CVE-2026-73470 | Apache Syncope escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Apache Syncope. Risulta coinvolta una funzione sconosciuta. La manipola...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#105</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-98-cve-2026-73178-apache-syncope-autenticazione-debol.html" class="card-title">CVE-2026-73178 | Apache Syncope autenticazione debole</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in Apache Syncope. Da questa vulnerabilità è interessato una funzione sconos...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#106</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-99-cve-2026-73370-apache-syncope-escalationi-di-privi.html" class="card-title">CVE-2026-73370 | Apache Syncope escalationi di privilegi</a>
+      <p class="card-desc">Un punto di debole di livello critico è stato rilevato in Apache Syncope. É interessato una funzione sconosciuta. Per causa della manipolazi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#107</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-100-cve-2026-73236-apache-syncope-escalationi-di-privi.html" class="card-title">CVE-2026-73236 | Apache Syncope escalationi di privilegi</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Apache Syncope. Riguarda una funzione sconosciuta. Mediante la manipolazio...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#108</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-101-new-ddrop-attack-breaks-intel-tdx-and-amd-sev-snp-.html" class="card-title">New DDRop Attack Breaks Intel TDX and AMD SEV-SNP Confidential Computing</a>
+      <p class="card-desc">Researchers have disclosed a new hardware attack, called DDRop, that breaks the memory protection in Intel and AMD confidential computing by...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#109</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-102-3bb-attacker-used-meshcentral-backdoor-for-root-ac.html" class="card-title">3BB Attacker Used MeshCentral Backdoor for Root Access, Targeted Subscriber Credentials</a>
+      <p class="card-desc">An attacker was operating inside the network of 3BB, one of Thailand&#39;s largest broadband providers, and maintained remote control of interna...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#110</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-103-telegram-desktop-flaw-lets-hidden-javascript-exfil.html" class="card-title">Telegram Desktop Flaw Lets Hidden JavaScript Exfiltrate Messages From HTML Exports</a>
+      <p class="card-desc">A flaw in Telegram Desktop let a bot&#39;s message plant hidden JavaScript inside chats that users exported to HTML files, security researchers ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#111</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-104-red-heron-exploits-gitea-rce-to-compromise-13-orga.html" class="card-title">Red Heron Exploits Gitea RCE to Compromise 13 Organizations Across Six Countries</a>
+      <p class="card-desc">A suspected Chinese threat actor tracked as Red Heron has been attributed to the rapid exploitation of a recently disclosed security vulnera...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#112</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-105-wordpress-adds-automated-plugin-reviews-to-block-h.html" class="card-title">WordPress Adds Automated Plugin Reviews to Block High-Risk Updates Before Distribution</a>
+      <p class="card-desc">WordPress has announced it&#39;s launching an automated security review for every release of a plugin before it&#39;s distributed through the WordPr...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#113</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-106-weekly-recap-rogue-ai-agents-wechat-worm-papercut-.html" class="card-title">⚡ Weekly Recap: Rogue AI Agents, WeChat Worm, PaperCut Attacks, AI Espionage, and Rootkits</a>
+      <p class="card-desc">AI keeps showing up in the wrong places. Attackers are using it to speed up exploits, test defenses, and automate more of the job. Some mode...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#114</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-107-ai-changed-the-exposure-problem-validation-needs-t.html" class="card-title">AI Changed the Exposure Problem. Validation Needs to Change With It.</a>
+      <p class="card-desc">There&#39;s a lot of noise around AI and cybersecurity right now. What’s actually important is far simpler, if often lost in the hubbub. Vulnera...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#115</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-108-malicious-twitch-browser-extension-leaks-oauth-tok.html" class="card-title">Malicious Twitch Browser Extension Leaks OAuth Tokens From Nearly 31,000 Users</a>
+      <p class="card-desc">A malicious cross-store Twitch browser extension has leaked OAuth tokens associated with nearly 31,000 users to proxy servers operated by a ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#116</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-109-microsoft-releases-emergency-windows-updates-to-fi.html" class="card-title">Microsoft releases emergency Windows updates to fix RDS failures</a>
+      <p class="card-desc">Microsoft has released emergency out-of-band Windows updates to fix Remote Desktop Services failures caused by this month&#39;s security updates...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#117</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-110-japan-s-digital-agency-says-vpn-flaw-exposed-246-0.html" class="card-title">Japan&#39;s Digital Agency says VPN flaw exposed 246,000 personnel records</a>
+      <p class="card-desc">Japan&#39;s Digital Agency has discovered a data breach that may have exposed around 246,000 record rows containing personal information of gove...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#118</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-111-homebrew-7-0-0-gets-built-in-gui-better-security-c.html" class="card-title">Homebrew 7.0.0 gets built-in GUI, better security controls</a>
+      <p class="card-desc">Homebrew package manager version 7.0.0 has been released with a built-in vulnerability scanner, stronger security controls, and the full rel...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#119</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-112-twitch-extension-with-30k-installs-exposes-users-o.html" class="card-title">Twitch extension with 30K installs exposes users’ OAuth tokens</a>
+      <p class="card-desc">A browser extension called Twitch Enhanced Viewer | JeetBot, available in the official Chrome and Firefox stores, sends users&#39; Twitch OAuth ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#120</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-113-hackers-hijack-hbo-max-reddit-account-to-push-malw.html" class="card-title">Hackers hijack HBO Max Reddit account to push malware in ClickFix ads</a>
+      <p class="card-desc">Hackers compromised HBO Max&#39;s official Reddit account and used it to push malicious ads that launched ClickFix attacks to infect Windows and...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#121</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-114-hackers-target-exposed-vite-dev-servers-to-steal-a.html" class="card-title">Hackers target exposed Vite dev servers to steal AWS, Azure secrets</a>
+      <p class="card-desc">A mass-scanning campaign targeting internet-exposed Vite development servers is attempting to steal cloud credentials and configurations fro...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#122</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-115-why-patch-automation-needs-brakes-not-just-an-acce.html" class="card-title">Why Patch Automation Needs Brakes, Not Just an Accelerator</a>
+      <p class="card-desc">Patch automation can help IT teams keep pace with growing update volumes, but deploying faster also means bad updates can spread faster. Act...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#123</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-116-webinar-how-malicious-oauth-apps-can-lead-to-googl.html" class="card-title">Webinar: How malicious OAuth apps can lead to Google Workspace breaches</a>
+      <p class="card-desc">Attackers can combine social engineering with malicious OAuth applications to gain access to Google Workspace data without relying solely on...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#124</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-117-microsoft-september-updates-cause-rds-failures-on-.html" class="card-title">Microsoft: September updates cause RDS failures on Windows Server</a>
+      <p class="card-desc">Microsoft has confirmed reports that the September 2026 security updates cause Remote Desktop Services (RDS) failures on Windows Server syst...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#125</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-118-revolut-discloses-data-breach-exposing-financial-i.html" class="card-title">Revolut discloses data breach exposing financial info, passports</a>
+      <p class="card-desc">Fintech company Revolut has disclosed a data breach after sharing data from an undisclosed number of customers with a threat actor impersona...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#126</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-119-microsoft-september-updates-break-audio-on-some-wi.html" class="card-title">Microsoft: September updates break audio on some Windows PCs</a>
+      <p class="card-desc">Microsoft has confirmed that USB audio devices may fail on some Windows systems after installing the KB5124008and KB5124012 September 2026 s...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#127</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-120-cisa-hackers-now-exploit-max-severity-gitlab-flaw-.html" class="card-title">CISA: Hackers now exploit max severity GitLab flaw in attacks</a>
+      <p class="card-desc">The U.S. Cybersecurity and Infrastructure Security Agency (CISA) warned that hackers are now exploiting a maximum-severity GitLab vulnerabil...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#128</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-121-maximum-severity-gitlab-flaw-puts-supply-chains-at.html" class="card-title">Maximum Severity GitLab Flaw Puts Supply Chains at Risk</a>
+      <p class="card-desc">CVE-2026-85706 is a path traversal vulnerability with a 10 out of 10 CVSS score, affecting both GitLab Community Edition and Enterprise Edit...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#129</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-122-anthropic-ceo-time-to-shift-from-improving-to-cont.html" class="card-title">Anthropic CEO: Time to Shift From Improving to Controlling AI</a>
+      <p class="card-desc">Dario Amodei says it&#39;s time to slow the pace of frontier AI improvements so that security and risk prevention efforts can catch up. What doe...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#130</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-123-virtual-event-what-every-enterprise-should-know-ab.html" class="card-title">[Virtual Event] What Every Enterprise Should Know About Securing Cloud Assets in the Age of AI</a>
+      <p class="card-desc"></p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#131</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-124-virtual-event-building-a-secure-ai-strategy-for-th.html" class="card-title">[Virtual Event] Building a Secure AI Strategy for the Enterprise</a>
+      <p class="card-desc"></p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#132</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-126-hackers-mass-scan-exposed-vite-servers-to-steal-aw.html" class="card-title">Hackers Mass-Scan Exposed Vite Servers to Steal AWS and Azure Cloud Credentials</a>
+      <p class="card-desc">Hackers are conducting a large-scale automated scanning campaign against internet-exposed Vite development servers, attempting to steal AWS ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#133</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-127-uk-government-begins-moving-23-million-users-away-.html" class="card-title">UK Government Begins Moving 23 Million Users Away From Passwords</a>
+      <p class="card-desc">The UK government has begun rolling out passkeys across GOV.UK One Login, offering more than 23 million users a passwordless way to access p...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#134</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-131-malicious-twitch-extension-exposes-oauth-tokens-of.html" class="card-title">Malicious Twitch Extension Exposes OAuth Tokens of 30,000 Chrome and Firefox Users</a>
+      <p class="card-desc">A browser extension promoted as a Twitch viewing helper has been found sending live account tokens through servers controlled by its operato...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#135</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-132-whatsapp-s-new-restricted-chat-feature-locks-conve.html" class="card-title">WhatsApp’s New Restricted Chat Feature Locks Conversation on Your Primary Phone</a>
+      <p class="card-desc">WhatsApp is developing a new privacy control called Restricted Chat that will keep selected conversations accessible only from a user’s prim...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#136</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-133-cyclops-blink-evolves-into-x86-64-linux-implant-wi.html" class="card-title">Cyclops Blink Evolves Into x86-64 Linux Implant With Packet Sniffing and Internal Network Scanning</a>
+      <p class="card-desc">Cyclops Blink has returned in a form that gives attackers a deeper view inside corporate networks. The malware was found on compromised Cisc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#137</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-135-beijing-hits-back-at-anthropic-ceo-s-call-to-curb-.html" class="card-title">Beijing Hits Back at Anthropic CEO’s Call to Curb China’s AI Development</a>
+      <p class="card-desc">China’s Ministry of Foreign Affairs responded to a question about Amodei’s essay by saying that all parties should work together on AI. The ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#138</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-136-new-warnings-about-the-risks-of-ai-to-humanity-rev.html" class="card-title">New Warnings About the Risks of AI to Humanity Revive a Long-Running Debate</a>
+      <p class="card-desc">Concerns over the potential risks of the technology are rising as new AI models become more powerful, heightening both the potential for mis...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#139</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-137-personal-financial-info-exposed-in-revolut-data-br.html" class="card-title">Personal, Financial Info Exposed in Revolut Data Breach</a>
+      <p class="card-desc">The company unintentionally disclosed users’ information to a third party impersonating a government agency. The post Personal, Financial In...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#140</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-140-cisos-race-to-control-ai-agents-without-destroying.html" class="card-title">CISOs Race to Control AI Agents Without Destroying Their Value</a>
+      <p class="card-desc">Security leaders are struggling to modernize cyber hygiene and prevent over-privileged agents from causing unintended harm. The post CISOs R...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#141</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-141-telus-warns-customers-of-account-breaches.html" class="card-title">Telus Warns Customers of Account Breaches</a>
+      <p class="card-desc">Stolen credentials were used in a multi-month campaign to access subscriber personal data and billing records. The post Telus Warns Customer...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#142</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-142-three-jfrog-artifactory-flaws-exploited-for-backdo.html" class="card-title">Three JFrog Artifactory Flaws Exploited for Backdoor Deployment</a>
+      <p class="card-desc">The vulnerabilities can allow attackers to bypass authentication and elevate their privileges to administrator. The post Three JFrog Artifac...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#143</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-143-connectwise-patches-screenconnect-vulnerability-ex.html" class="card-title">ConnectWise Patches ScreenConnect Vulnerability Exploited in Worm-Like Attacks</a>
+      <p class="card-desc">The flaw allows attackers to send files and execute them without authorization through an active remote session. The post ConnectWise Patche...</p>
+    </div>
+</div>
+
+<div class="no-results" id="no-results">
+  <p>Nessun risultato trovato</p>
+</div>
+
+<footer class="footer">
+  <p>Cyber Security News Dashboard - Generato automaticamente senza amore o sentimento</p>
+  <p>Creato (con n8n e un pochino di javascript scritto da un LLM) da: <a href="https://www.linkedin.com/in/mocciaalessandro" target="_blank">Alessandro</a></p>
+</footer>
+
+<script>
+(function() {
+  const cards = document.querySelectorAll('.card');
+  const buttons = document.querySelectorAll('[data-filter]');
+  const searchInput = document.getElementById('search');
+  const noResults = document.getElementById('no-results');
+  
+  let currentFilter = 'all';
+  let searchTerm = '';
+
+  const filterCards = () => {
+    let visibleCount = 0;
+    
+    cards.forEach(card => {
+      const matchesFilter = currentFilter === 'all' || card.dataset.severity === currentFilter;
+      const matchesSearch = !searchTerm || card.textContent.toLowerCase().includes(searchTerm);
+      const isVisible = matchesFilter && matchesSearch;
+      
+      card.style.display = isVisible ? 'block' : 'none';
+      if (isVisible) visibleCount++;
+    });
+    
+    noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+  };
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      filterCards();
+    });
+  });
+
+  let debounceTimer;
+  searchInput.addEventListener('input', (e) => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      searchTerm = e.target.value.toLowerCase();
+      filterCards();
+    }, 150);
+  });
+})();
+</script>
+
+</body>
+</html>
