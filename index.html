@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyber Security News Dashboard</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --primary: #00ff9f;
+      --primary-dim: #00cc7a;
+      --card-bg: #111;
+      --border: rgba(0, 255, 159, 0.2);
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--primary);
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.5;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      font-size: clamp(1.2rem, 4vw, 2rem);
+      text-shadow: 0 0 20px var(--primary);
+      margin: 0 0 10px 0;
+    }
+    .header time {
+      font-size: 0.85rem;
+      opacity: 0.7;
+    }
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 25px;
+    }
+    .stat {
+      padding: 8px 15px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      background: var(--card-bg);
+    }
+    .stat.critical { border-color: #ff4444; }
+    .stat.high { border-color: #ff8c00; }
+    .stat.medium { border-color: #ffd700; }
+    .stat.low { border-color: var(--primary-dim); }
+    .controls {
+      max-width: 900px;
+      margin: 0 auto 25px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .search-wrapper {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+    .search-wrapper::before {
+      content: '🔍';
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+    }
+    input {
+      width: 100%;
+      padding: 10px 10px 10px 35px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--primary);
+      font-family: inherit;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .filter-buttons {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 10px 15px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--primary);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    button:hover, button.active {
+      background: var(--primary);
+      color: var(--bg);
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      display: grid;
+      gap: 15px;
+    }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 15px;
+      background: var(--card-bg);
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .index {
+      font-size: 12px;
+      opacity: 0.6;
+    }
+    .badge {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    .critical { background: #ff4444; color: #fff; }
+    .high { background: #ff8c00; color: #000; }
+    .medium { background: #ffd700; color: #000; }
+    .low { background: var(--primary-dim); color: #000; }
+    .card-title {
+      display: block;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: bold;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .card-title:hover { text-decoration: underline; }
+    .card-desc {
+      font-size: 12px;
+      color: var(--primary-dim);
+      margin: 0;
+    }
+    .no-results {
+      text-align: center;
+      padding: 40px;
+      opacity: 0.6;
+      display: none;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      opacity: 0.6;
+      text-align: center;
+    }
+    @media (max-width: 600px) {
+      .controls { flex-direction: column; }
+      .filter-buttons { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🛡️ CYBER SECURITY NEWS DASHBOARD</h1>
+  <time datetime="2026-09-16T15:03:17.378Z">16/09/2026, 15:03</time>
+</div>
+
+<div class="stats">
+  <div class="stat">📊 Totale: <strong>145</strong></div>
+  <div class="stat critical">🔴 Critical: <strong>11</strong></div>
+  <div class="stat high">🟠 High: <strong>4</strong></div>
+  <div class="stat medium">🟡 Medium: <strong>6</strong></div>
+  <div class="stat low">🟢 Low: <strong>124</strong></div>
+</div>
+
+<div class="controls">
+  <div class="search-wrapper">
+    <input type="search" id="search" placeholder="Cerca nelle notizie..." aria-label="Cerca">
+  </div>
+  <div class="filter-buttons">
+    <button class="active" data-filter="all">Tutte</button>
+    <button data-filter="critical">Critical</button>
+    <button data-filter="high">High</button>
+    <button data-filter="medium">Medium</button>
+    <button data-filter="low">Low</button>
+  </div>
+</div>
+
+<div class="container" id="cards">
+  
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#01</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-107-attackers-exploit-woocommerce-wholesale-lead-captu.html" class="card-title">Attackers Exploit WooCommerce Wholesale Lead Capture Flaw to Plant PHP Web Shells</a>
+      <p class="card-desc">Threat actors are exploiting a critical security flaw in WooCommerce Wholesale Lead Capture, a premium WordPress plugin that has more than 6...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#02</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-108-active-exploitation-attempts-target-wso2-api-manag.html" class="card-title">Active Exploitation Attempts Target WSO2 API Manager JWT Bypass With Forged Admin Tokens</a>
+      <p class="card-desc">A critical security flaw in WSO2 API Manager has come under active exploitation in the wild, according to findings from watchTowr. The vulne...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#03</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-115-critical-screenconnect-flaw-now-actively-exploited.html" class="card-title">Critical ScreenConnect flaw now actively exploited in attacks</a>
+      <p class="card-desc">Attackers now exploit a critical-severity ConnectWise ScreenConnect vulnerability in the wild, according to the U.S. Cybersecurity and Infra...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#04</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-117-google-fixes-actively-exploited-android-zero-day-o.html" class="card-title">Google fixes actively exploited Android zero-day on Pixel devices</a>
+      <p class="card-desc">Google has released the September 2026 security patches to address 110 vulnerabilities affecting its Pixel devices, including one zero-day f...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#05</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-123-black-hat-usa-2026-the-breaking-news-the-openai-hu.html" class="card-title">Black Hat USA 2026 | The &#39;Breaking&#39; News: The OpenAI–Hugging Face Incident</a>
+      <p class="card-desc">The &#39;Breaking&#39; News: The OpenAI–Hugging Face Incident - A Technical Reconstruction and Its Implications for AI At this Black Hat USA 2026 ta...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#06</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-131-tp-link-cameras-0-day-vulnerabilities-allow-attack.html" class="card-title">TP-Link Cameras 0-Day Vulnerabilities Allow Attackers to Spy on Users</a>
+      <p class="card-desc">TP-Link Tapo C200 smart cameras were affected by two zero-day vulnerabilities that could allow attackers on the same network to bypass authe...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#07</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-133-critical-hpe-vulnerabilities-allow-remote-attacker.html" class="card-title">Critical HPE Vulnerabilities Allow Remote Attackers to Achieve Complete System Compromise</a>
+      <p class="card-desc">Hewlett Packard Enterprise has released security updates for HPE Networking EdgeConnect SD-WAN Gateways and SD-WAN Orchestrator after identi...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#08</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-134-critical-issabel-pbx-command-execution-vulnerabili.html" class="card-title">Critical Issabel PBX Command Execution Vulnerability Exploited in the Wild</a>
+      <p class="card-desc">A critical vulnerability in the Issabel Framework, which supports Issabel PBX deployments, is being actively exploited in the wild. The flaw...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#09</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-135-oracle-critical-security-update-673-vulnerabilitie.html" class="card-title">Oracle Critical Security Update – 673 Vulnerabilities Patched Across Product Families</a>
+      <p class="card-desc">Oracle has released one of its largest monthly security bundles to date, shipping 673 new security patches in its September 2026 Critical Se...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#10</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-139-pixel-modem-zero-day-exploited-in-targeted-attacks.html" class="card-title">Pixel Modem Zero-Day Exploited in Targeted Attacks</a>
+      <p class="card-desc">Google announced patches for the exploited privilege escalation vulnerability (CVE-2026-58704) on September 15. The post Pixel Modem Zero-Da...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#11</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-141-unauthenticated-rce-flaws-could-expose-200-000-wor.html" class="card-title">Unauthenticated RCE Flaws Could Expose 200,000+ WordPress Sites to Takeover</a>
+      <p class="card-desc">Vulnerabilities in The Events Calendar can provide attackers with remote code execution capabilities. The post Unauthenticated RCE Flaws Cou...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#12</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-104-google-patches-pixel-modem-flaw-amid-signs-of-limi.html" class="card-title">Google Patches Pixel Modem Flaw Amid Signs of Limited Targeted Exploitation</a>
+      <p class="card-desc">Google has disclosed that a high-severity security flaw in its Pixel Cellular Modem has come under exploitation in the wild. The vulnerabili...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#13</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-106-acronis-cpanel-backup-plugin-vulnerability-exploit.html" class="card-title">Acronis cPanel Backup Plugin Vulnerability Exploited in Targeted Attacks</a>
+      <p class="card-desc">Acronis has warned that a high-severity security flaw in its Backup plugin for cPanel and Web Host Manager (WHM) deployments has been exploi...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#14</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-118-acronis-warns-of-actively-exploited-flaw-in-its-cp.html" class="card-title">Acronis warns of actively exploited flaw in its cPanel backup plugin</a>
+      <p class="card-desc">Acronis disclosed a high-severity Linux local privilege escalation vulnerability in its backup plugin for cPanel, WebHost Manager (WHM), and...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#15</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-145-acronis-patches-exploited-vulnerability-in-cpanel-.html" class="card-title">Acronis Patches Exploited Vulnerability in cPanel Backup Plugin</a>
+      <p class="card-desc">CVE-2026-87886 is a high-severity insecure file permissions flaw that can lead to local privilege escalation. The post Acronis Patches Explo...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#16</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-2-cve-2026-92140-jenkins-project-gitee-plugin-fino-a.html" class="card-title">CVE-2026-92140 | Jenkins Project Gitee Plugin fino a 1301.v8957053c7902 Webhook Endpoint cross site scripting</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Jenkins Project Gitee Plugin fino a 1301.v8957053c7902. Viene interessat...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#17</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-15-cve-2026-92136-jenkins-project-owasp-dependency-ch.html" class="card-title">CVE-2026-92136 | Jenkins Project OWASP Dependency-Check Plugin fino a 5.6.4 cross site scripting</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Jenkins Project OWASP Dependency-Check Plugin fino a 5.6.4. Si consider...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#18</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-16-cve-2026-92135-jenkins-project-coverage-plugin-fin.html" class="card-title">CVE-2026-92135 | Jenkins Project Coverage Plugin fino a 3.3358.v9487dde48783 cross site scripting</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Jenkins Project Coverage Plugin fino a 3.3358.v9487dde48783. Risulta co...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#19</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-17-cve-2026-92134-jenkins-project-warnings-plugin-fin.html" class="card-title">CVE-2026-92134 | Jenkins Project Warnings Plugin fino a 13.10258.va_17d49a_78c3b_ cross site scripting</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in Jenkins Project Warnings Plugin fino a 13.10258.va_17d49a_78c3b_. Da...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#20</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-56-cve-2026-73169-advantech-eki-1242eims-fino-a-1-06-.html" class="card-title">CVE-2026-73169 | Advantech EKI-1242EIMS fino a 1.06.01 Modbus Transaction Management Interface cross site scripting</a>
+      <p class="card-desc">In Advantech EKI-1242EIMS fino a 1.06.01 è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciut...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#21</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-96-cve-2026-19535-advantech-eki-1242ieims-eki-1242eim.html" class="card-title">CVE-2026-19535 | Advantech EKI-1242IEIMS/EKI-1242EIMS fino a 1.06.01 LuCI administrative web interface cross site request forgery</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in Advantech EKI-1242IEIMS and EKI-1242EIMS fino a 1.06.01. É interessato una fun...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#22</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-1-cve-2026-92141-jenkins-project-keycloak-authentica.html" class="card-title">CVE-2026-92141 | Jenkins Project Keycloak Authentication Plugin fino a 2.4.1 Redirect</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in Jenkins Project Keycloak Authentication Plugin fino a 2.4.1. Riguarda una funz...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#23</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-3-cve-2026-85104-sooma-tdcs-home-therapy-2gen-escala.html" class="card-title">CVE-2026-85104 | Sooma tDCS Home Therapy 2Gen escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come critico in Sooma tDCS Home Therapy 2Gen. Si considera coinvolta una funzione sconosciut...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#24</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-4-cve-2026-92139-jenkins-project-bitbucket-push-and-.html" class="card-title">CVE-2026-92139 | Jenkins Project Bitbucket Push and Pull Request Plugin fino a 4.0.1 Webhook escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Jenkins Project Bitbucket Push and Pull Request Plugin fino a 4.0.1. Ri...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#25</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-5-cve-2026-78301-isc-bind-fino-a-9-21-25-recursion-n.html" class="card-title">CVE-2026-78301 | ISC BIND fino a 9.21.25 Recursion negazione del servizio</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in ISC BIND fino a 9.18.50/9.18.50-S1/9.20.27/9.20.27-S1/9.21.25. Da qu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#26</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-6-cve-2026-19667-isc-bind-9-fino-a-9-20-27-s1-named-.html" class="card-title">CVE-2026-19667 | ISC BIND 9 fino a 9.20.27-S1 named escalationi di privilegi</a>
+      <p class="card-desc">Un punto di debole di livello critico è stato rilevato in ISC BIND 9 fino a 9.18.50/9.20.27/9.21.25/9.18.50-S1/9.20.27-S1. É interessato una...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#27</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-7-cve-2026-77692-isc-bind-9-fino-a-9-20-27-9-21-25-9.html" class="card-title">CVE-2026-77692 | ISC BIND 9 fino a 9.20.27/9.21.25/9.20.27-S1 DNS-over-HTTPS escalationi di privilegi</a>
+      <p class="card-desc">Un punto di criticita di livello critico è stato rilevato in ISC BIND 9 fino a 9.20.27/9.21.25/9.20.27-S1. Riguarda una funzione sconosciuta...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#28</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-8-cve-2026-61598-djust-org-djust-fino-a-1-0-6-modelb.html" class="card-title">CVE-2026-61598 | djust-org djust fino a 1.0.6 ModelBindingMixin model_binding.py update_model Campo escalationi di privilegi</a>
+      <p class="card-desc">In djust-org djust fino a 1.0.6 è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciuta apparte...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#29</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-9-cve-2026-81736-isc-bind-fino-a-9-21-25-resolver-ne.html" class="card-title">CVE-2026-81736 | ISC BIND fino a 9.21.25 Resolver negazione del servizio</a>
+      <p class="card-desc">In ISC BIND fino a 9.18.50/9.18.50-S1/9.20.27/9.20.27-S1/9.21.25 è stata rilevato un punto critico di livello problematico. Si considera coi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#30</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-10-cve-2026-81563-isc-bind-fino-a-9-21-24-resolver-ne.html" class="card-title">CVE-2026-81563 | ISC BIND fino a 9.21.24 Resolver negazione del servizio</a>
+      <p class="card-desc">Un punto critico di livello critico è stato rilevato in ISC BIND fino a 9.18.49/9.18.50-S1/9.20.26/9.20.27-S1/9.21.24. Risulta coinvolta una...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#31</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-11-cve-2026-89030-adenion-blog2social-plugin-fino-a-9.html" class="card-title">CVE-2026-89030 | Adenion Blog2Social Plugin fino a 9.0.x b2s_search_user AJAX includes/Tools.php B2S_Tools::searchUser rivelazione di informazioni</a>
+      <p class="card-desc">In Adenion Blog2Social Plugin fino a 9.0.x stata rilevata una vulnerabilità di livello problematico. Da questa vulnerabilità è interessato l...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#32</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-12-cve-2026-89029-adenion-blog2social-plugin-fino-a-9.html" class="card-title">CVE-2026-89029 | Adenion Blog2Social Plugin fino a 9.0.x Ajax includes/Ajax/Get.php b2s_get_select_mandant_user owner escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in Adenion Blog2Social Plugin fino a 9.0.x. É interessato la funzione b2s_get_sel...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#33</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-13-cve-2026-19607-keycloak-keycloak-services-escalati.html" class="card-title">CVE-2026-19607 | Keycloak keycloak-services escalationi di privilegi</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in Keycloak. Riguarda una funzione sconosciuta del componente keycloak-services. ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#34</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-14-cve-2026-18212-keycloak-saml-redirect-helper-escal.html" class="card-title">CVE-2026-18212 | Keycloak Saml Redirect Helper escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Keycloak. Viene interessata una funzione sconosciuta appartenente al com...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#35</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-18-cve-2026-92132-jenkins-project-gradle-plugin-fino-.html" class="card-title">CVE-2026-92132 | Jenkins Project Gradle Plugin fino a 2.19.1252.v15196b_5a_6e10 rivelazione di informazioni</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in Jenkins Project Gradle Plugin fino a 2.19.1252.v15196b_5a_6e10. É interessato...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#36</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-19-cve-2026-92130-jenkins-project-multibranch-plugin-.html" class="card-title">CVE-2026-92130 | Jenkins Project Multibranch Plugin fino a 841.vec5b_9e1806ec resolveScm escalationi di privilegi</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Jenkins Project Multibranch Plugin fino a 841.vec5b_9e1806ec. Riguarda la ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#37</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-20-cve-2026-92129-jenkins-project-script-security-plu.html" class="card-title">CVE-2026-92129 | Jenkins Project Script Security Plugin fino a 1415.v9a_f9b_3a_c253d escalationi di privilegi</a>
+      <p class="card-desc">In Jenkins Project Script Security Plugin fino a 1415.v9a_f9b_3a_c253d è stato trovato un punto critico di livello estremamente critico. Vie...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#38</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-21-cve-2026-92128-jenkins-project-script-security-plu.html" class="card-title">CVE-2026-92128 | Jenkins Project Script Security Plugin fino a 1415.v9a_f9b_3a_c253d JAR File escalationi di privilegi</a>
+      <p class="card-desc">In Jenkins Project Script Security Plugin fino a 1415.v9a_f9b_3a_c253d è stata rilevato un punto critico di livello problematico. Si conside...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#39</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-22-cve-2026-92127-jenkins-project-script-security-plu.html" class="card-title">CVE-2026-92127 | Jenkins Project Script Security Plugin fino a 1415.v9a_f9b_3a_c253d escalationi di privilegi</a>
+      <p class="card-desc">Un punto critico di livello estremamente critico è stato rilevato in Jenkins Project Script Security Plugin fino a 1415.v9a_f9b_3a_c253d. Ri...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#40</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-23-cve-2026-92126-jenkins-script-security-plugin-fino.html" class="card-title">CVE-2026-92126 | Jenkins Script Security Plugin fino a 1415.v9a_f9b_3a_c253d escalationi di privilegi</a>
+      <p class="card-desc">In Jenkins Script Security Plugin fino a 1415.v9a_f9b_3a_c253d stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#41</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-24-cve-2026-92125-jenkins-project-script-security-plu.html" class="card-title">CVE-2026-92125 | Jenkins Project Script Security Plugin fino a 1415.v9a_f9b_3a_c253d Annotation Processing escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello estremamente critico in Jenkins Project Script Security Plugin fino a 1415.v9a_f9b_3a_c253d. É...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#42</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-25-cve-2026-92138-jenkins-project-bitbucket-server-in.html" class="card-title">CVE-2026-92138 | Jenkins Project Bitbucket Server Integration Plugin fino a 6.0.1 OAuth Authorization Endpoint oauth_callback escalationi di privilegi</a>
+      <p class="card-desc">Una vulnerabilità di livello critico è stata rilevata in Jenkins Project Bitbucket Server Integration Plugin fino a 6.0.1. Riguarda una funz...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#43</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-26-cve-2026-92133-jenkins-project-gitlab-plugin-fino-.html" class="card-title">CVE-2026-92133 | Jenkins Project GitLab Plugin fino a 1.2149.vcfc32c82b_f7f Cache escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Jenkins Project GitLab Plugin fino a 1.2149.vcfc32c82b_f7f. Viene intere...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#44</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-27-cve-2026-92131-jenkins-project-groovy-libraries-pl.html" class="card-title">CVE-2026-92131 | Jenkins Project Groovy Libraries Plugin fino a 805.va_fc79344957d directory traversal</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Jenkins Project Groovy Libraries Plugin fino a 805.va_fc79344957d. Si c...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#45</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-28-cve-2026-92124-jenkins-project-script-security-plu.html" class="card-title">CVE-2026-92124 | Jenkins Project Script Security Plugin fino a 1415.v9a_f9b_3a_c253d escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come estremamente critico in Jenkins Project Script Security Plugin fino a 1415.v9a_f9b_3a_c...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#46</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-29-cve-2026-92122-jenkins-project-script-security-plu.html" class="card-title">CVE-2026-92122 | Jenkins Project Script Security Plugin fino a 1415.v9a_f9b_3a_c253d escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in Jenkins Project Script Security Plugin fino a 1415.v9a_f9b_3a_c253d. Da q...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#47</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-30-cve-2026-92137-jenkins-project-robot-framework-plu.html" class="card-title">CVE-2026-92137 | Jenkins Project Robot Framework Plugin fino a 6.2.2 escalationi di privilegi</a>
+      <p class="card-desc">Un punto di debole di livello estremamente critico è stato rilevato in Jenkins Project Robot Framework Plugin fino a 6.2.2. É interessato un...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#48</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-31-cve-2026-92123-jenkins-project-script-security-plu.html" class="card-title">CVE-2026-92123 | Jenkins Project Script Security Plugin fino a 1415.v9a_f9b_3a_c253d escalationi di privilegi</a>
+      <p class="card-desc">Un punto di criticita di livello critico è stato rilevato in Jenkins Project Script Security Plugin fino a 1415.v9a_f9b_3a_c253d. Riguarda u...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#49</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-32-cve-2026-19662-isc-bind-fino-a-9-18-50-9-20-27-nam.html" class="card-title">CVE-2026-19662 | ISC BIND fino a 9.18.50/9.20.27 named buffer overflow</a>
+      <p class="card-desc">In ISC BIND fino a 9.18.50/9.20.27 è stato trovato un punto critico di livello critico. Viene interessata una funzione sconosciuta appartene...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#50</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-33-cve-2026-19941-isc-bind-fino-a-9-20-27-s1-named-es.html" class="card-title">CVE-2026-19941 | ISC BIND fino a 9.20.27-S1 named escalationi di privilegi</a>
+      <p class="card-desc">In ISC BIND fino a 9.18.50/9.20.27/9.21.25/9.18.50-S1/9.20.27-S1 è stata rilevato un punto critico di livello problematico. Si considera coi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#51</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-34-cve-2026-61590-djust-org-djust-fino-a-1-0-6-observ.html" class="card-title">CVE-2026-61590 | djust-org djust fino a 1.0.6 Observability Endpoint eval_handler rivelazione di informazioni</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in djust-org djust fino a 1.0.6. Risulta coinvolta una funzione sconosciuta del co...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#52</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-35-cve-2026-17526-keycloak-keycloak-services-escalati.html" class="card-title">CVE-2026-17526 | Keycloak keycloak-services escalationi di privilegi</a>
+      <p class="card-desc">In Keycloak stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato una funzione sconosciuta del componen...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#53</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-36-cve-2026-56719-mikrotik-routeros-fino-a-6-49-18-7-.html" class="card-title">CVE-2026-56719 | MikroTik RouterOS fino a 6.49.18/7.11.2/7.23.x SessionSetupAndX uniPwdLen rivelazione di informazioni</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello critico in MikroTik RouterOS fino a 6.49.18/7.11.2/7.23.x. É interessato una funzione sconosci...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#54</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-37-cve-2026-91843-check-point-quantum-security-manage.html" class="card-title">CVE-2026-91843 | Check Point Quantum Security Management fino a R81 (EOS) buffer overflow</a>
+      <p class="card-desc">Una vulnerabilità di livello estremamente critico è stata rilevata in Check Point Quantum Security Management fino a R81 (EOS). Riguarda una...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#55</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-38-cve-2026-92469-zlt2000-microservices-platform-fino.html" class="card-title">CVE-2026-92469 | zlt2000 microservices-platform fino a 6.0.0 file-center module FileController.java ID escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come critico in zlt2000 microservices-platform fino a 6.0.0. Viene interessata una funzione s...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#56</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-39-cve-2026-92468-zlt2000-microservices-platform-fino.html" class="card-title">CVE-2026-92468 | zlt2000 microservices-platform fino a 6.0.0 Search Center Service SearchController.java indexName/routing escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in zlt2000 microservices-platform fino a 6.0.0. Si considera coinvolta una...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#57</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-40-cve-2026-73177-advantech-eki-1242eims-eki-1242ieim.html" class="card-title">CVE-2026-73177 | Advantech EKI-1242EIMS/EKI-1242IEIMS 1.06.01 Firmware Upgrade Mechanism autenticazione debole</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come estremamente critico in Advantech EKI-1242EIMS and EKI-1242IEIMS 1.06.01. Risulta coinv...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#58</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-41-cve-2026-92467-zlt2000-microservices-platform-fino.html" class="card-title">CVE-2026-92467 | zlt2000 microservices-platform fino a 6.0.0 Password Change SysUserController.java autenticazione debole</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in zlt2000 microservices-platform fino a 6.0.0. Da questa vulnerabilità è in...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#59</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-42-cve-2026-89028-mikrotik-routeros-fino-a-6-49-18-7-.html" class="card-title">CVE-2026-89028 | MikroTik RouterOS fino a 6.49.18/7.11.2/7.23.x SMB1 SessionSetupAndX uniPwdLen buffer overflow</a>
+      <p class="card-desc">Un punto di debole di livello critico è stato rilevato in MikroTik RouterOS fino a 6.49.18/7.11.2/7.23.x. É interessato una funzione sconosc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#60</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-43-cve-2026-92466-zlt2000-microservices-platform-fino.html" class="card-title">CVE-2026-92466 | zlt2000 microservices-platform fino a 6.0.0 Permission Check DefaultPermissionServiceImpl.java escalationi di privilegi</a>
+      <p class="card-desc">Un punto di criticita di livello critico è stato rilevato in zlt2000 microservices-platform fino a 6.0.0. Riguarda una funzione sconosciuta ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#61</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-44-cve-2026-73175-advantech-eki-1242ieims-eki-1242eim.html" class="card-title">CVE-2026-73175 | Advantech EKI-1242IEIMS/EKI-1242EIMS fino a 1.06.01 OPC UA Gateway negazione del servizio</a>
+      <p class="card-desc">In Advantech EKI-1242IEIMS and EKI-1242EIMS fino a 1.06.01 è stato trovato un punto critico di livello critico. Viene interessata una funzio...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#62</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-45-cve-2026-73173-advantech-eki-1242eims-eki-1242ieim.html" class="card-title">CVE-2026-73173 | Advantech EKI-1242EIMS/EKI-1242IEIMS fino a 1.06.01 edgserver autenticazione debole</a>
+      <p class="card-desc">In Advantech EKI-1242EIMS and EKI-1242IEIMS fino a 1.06.01 è stata rilevato un punto critico di livello estremamente critico. Si considera c...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#63</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-46-cve-2026-73174-advantech-eki-1242eims-fino-a-1-06-.html" class="card-title">CVE-2026-73174 | Advantech EKI-1242EIMS fino a 1.06.01 Management Protocol cifratura debole</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in Advantech EKI-1242EIMS fino a 1.06.01. Risulta coinvolta una funzione sconosciu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#64</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-47-cve-2026-73176-advantech-eki-1242eims-eki-1242ieim.html" class="card-title">CVE-2026-73176 | Advantech EKI-1242EIMS/EKI-1242IEIMS fino a 1.06.01 Web Management Interface escalationi di privilegi</a>
+      <p class="card-desc">In Advantech EKI-1242EIMS and EKI-1242IEIMS fino a 1.06.01 stata rilevata una vulnerabilità di livello estremamente critico. Da questa vulne...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#65</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-48-cve-2026-73172-advantech-eki-1242eims-fino-a-1-06-.html" class="card-title">CVE-2026-73172 | Advantech EKI-1242EIMS fino a 1.06.01 edgserver management service escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello estremamente critico in Advantech EKI-1242EIMS fino a 1.06.01. É interessato una funzione scon...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#66</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-49-cve-2026-90049-linux-kernel-fino-a-7-2-4-skbuff-sk.html" class="card-title">CVE-2026-90049 | Linux Kernel fino a 7.2.4 Skbuff skb_zerocopy buffer overflow</a>
+      <p class="card-desc">Una vulnerabilità di livello estremamente critico è stata rilevata in Linux Kernel fino a 7.2.4. Riguarda la funzione skb_zerocopy del compo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#67</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-50-cve-2026-90048-linux-kernel-fino-a-6-6-156-6-12-10.html" class="card-title">CVE-2026-90048 | Linux Kernel fino a 6.6.156/6.12.109/6.18.50/7.2.4 NTFS3 fs/ntfs3 ni_create_attr_list buffer overflow</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come estremamente critico in Linux Kernel fino a 6.6.156/6.12.109/6.18.50/7.2.4. Viene intere...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#68</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-51-cve-2026-90046-linux-kernel-fino-a-6-18-50-7-2-4-p.html" class="card-title">CVE-2026-90046 | Linux Kernel fino a 6.18.50/7.2.4 Page Allocation mm/page_alloc.c free_pages_nolock escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Linux Kernel fino a 6.18.50/7.2.4. Si considera coinvolta una funzione ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#69</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-52-cve-2026-90045-linux-kernel-fino-a-6-18-50-7-2-4-u.html" class="card-title">CVE-2026-90045 | Linux Kernel fino a 6.18.50/7.2.4 USB Gadget FFS buffer overflow</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come estremamente critico in Linux Kernel fino a 6.18.50/7.2.4. Risulta coinvolta una funzio...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#70</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-53-cve-2026-90047-linux-kernel-fino-a-6-18-50-7-2-4-d.html" class="card-title">CVE-2026-90047 | Linux Kernel fino a 6.18.50/7.2.4 drm/xe get_flat_ccs_offset buffer overflow</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in Linux Kernel fino a 6.18.50/7.2.4. Da questa vulnerabilità è interessato ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#71</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-54-cve-2026-90044-linux-kernel-fino-a-6-18-50-7-2-4-f.html" class="card-title">CVE-2026-90044 | Linux Kernel fino a 6.18.50/7.2.4 f_fs ffs_epfile_write_iter/ffs_epfile_read_iter p/private buffer overflow</a>
+      <p class="card-desc">Un punto di debole di livello estremamente critico è stato rilevato in Linux Kernel fino a 6.18.50/7.2.4. É interessato la funzione ffs_epfi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#72</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-55-cve-2026-73171-advantech-eki-1242eims-eki-1242ieim.html" class="card-title">CVE-2026-73171 | Advantech EKI-1242EIMS/EKI-1242IEIMS fino a 1.06.01 Backup-Restore Workflow escalationi di privilegi</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Advantech EKI-1242EIMS and EKI-1242IEIMS fino a 1.06.01. Riguarda una funz...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#73</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-57-cve-2026-73170-advantech-eki-1242eims-fino-a-1-06-.html" class="card-title">CVE-2026-73170 | Advantech EKI-1242EIMS fino a 1.06.01 Modbus CSV Import Workflow escalationi di privilegi</a>
+      <p class="card-desc">In Advantech EKI-1242EIMS fino a 1.06.01 è stata rilevato un punto critico di livello estremamente critico. Si considera coinvolta una funzi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#74</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-58-cve-2026-73166-advantech-eki-1242ieims-eki-1242eim.html" class="card-title">CVE-2026-73166 | Advantech EKI-1242IEIMS/EKI-1242EIMS fino a 1.06.01 Web Management Interface escalationi di privilegi</a>
+      <p class="card-desc">Un punto critico di livello estremamente critico è stato rilevato in Advantech EKI-1242IEIMS and EKI-1242EIMS fino a 1.06.01. Risulta coinvo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#75</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-59-cve-2026-73167-advantech-eki-1242eims-eki-1242ieim.html" class="card-title">CVE-2026-73167 | Advantech EKI-1242EIMS/EKI-1242IEIMS fino a 1.06.01 Web Management Interface escalationi di privilegi</a>
+      <p class="card-desc">In Advantech EKI-1242EIMS and EKI-1242IEIMS fino a 1.06.01 stata rilevata una vulnerabilità di livello estremamente critico. Da questa vulne...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#76</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-60-cve-2026-73165-advantech-eki-1242ieims-eki-1242eim.html" class="card-title">CVE-2026-73165 | Advantech EKI-1242IEIMS/EKI-1242EIMS fino a 1.06.01 Web Management Interface escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello estremamente critico in Advantech EKI-1242IEIMS and EKI-1242EIMS fino a 1.06.01. É interessato...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#77</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-61-cve-2026-90042-linux-kernel-fino-a-6-18-50-7-2-4-c.html" class="card-title">CVE-2026-90042 | Linux Kernel fino a 6.18.50/7.2.4 Ceph ceph_fname_to_usr ctext/name buffer overflow</a>
+      <p class="card-desc">Una vulnerabilità di livello critico è stata rilevata in Linux Kernel fino a 6.18.50/7.2.4. Riguarda la funzione ceph_fname_to_usr del compo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#78</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-62-cve-2026-90039-linux-kernel-fino-a-6-18-50-7-2-4-n.html" class="card-title">CVE-2026-90039 | Linux Kernel fino a 6.18.50/7.2.4 NFSD unlock_filesystem nfsd_startup_net negazione del servizio</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Linux Kernel fino a 6.18.50/7.2.4. Viene interessata una funzione sconos...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#79</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-63-cve-2026-90038-linux-kernel-nfsd-nfsd4-revoke-expo.html" class="card-title">CVE-2026-90038 | Linux Kernel NFSD nfsd4_revoke_export_states buffer overflow</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come estremamente critico in Linux Kernel. Si considera coinvolta una funzione sconosciuta n...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#80</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-64-cve-2026-90034-linux-kernel-fino-a-7-3-rc1-mdc800-.html" class="card-title">CVE-2026-90034 | Linux Kernel fino a 7.3-rc1 mdc800 usb_mdc800_init buffer overflow</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in Linux Kernel fino a 7.3-rc1. Risulta coinvolta una funzione sconosciuta del ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#81</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-65-cve-2026-90043-linux-kernel-fino-a-7-2-4-zram-mark.html" class="card-title">CVE-2026-90043 | Linux Kernel fino a 7.2.4 zram mark_slot_accessed race condition</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in Linux Kernel fino a 7.2.4. Da questa vulnerabilità è interessato la funzi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#82</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-66-cve-2026-90041-linux-kernel-fino-a-6-18-50-7-2-4-h.html" class="card-title">CVE-2026-90041 | Linux Kernel fino a 6.18.50/7.2.4 HID Sony Driver sony_probe buffer overflow</a>
+      <p class="card-desc">Un punto di debole di livello estremamente critico è stato rilevato in Linux Kernel fino a 6.18.50/7.2.4. É interessato la funzione sony_pro...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#83</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-67-cve-2026-90037-linux-kernel-fino-a-6-18-50-7-2-4-n.html" class="card-title">CVE-2026-90037 | Linux Kernel fino a 6.18.50/7.2.4 NFSD nfs4_put_stid buffer overflow</a>
+      <p class="card-desc">Un punto di criticita di livello estremamente critico è stato rilevato in Linux Kernel fino a 6.18.50/7.2.4. Riguarda la funzione nfs4_put_s...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#84</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-68-cve-2026-90036-linux-kernel-fino-a-6-18-50-7-2-4-n.html" class="card-title">CVE-2026-90036 | Linux Kernel fino a 6.18.50/7.2.4 NFSD nfs4_put_stateowner buffer overflow</a>
+      <p class="card-desc">In Linux Kernel fino a 6.18.50/7.2.4 è stato trovato un punto critico di livello estremamente critico. Viene interessata una funzione sconos...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#85</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-69-cve-2026-90035-linux-kernel-fino-a-7-3-rc1-drm-amd.html" class="card-title">CVE-2026-90035 | Linux Kernel fino a 7.3-rc1 drm/amd/display get_estimated_bw negazione del servizio</a>
+      <p class="card-desc">In Linux Kernel fino a 6.6.156/6.12.109/6.18.50/7.2.4/7.3-rc1 è stata rilevato un punto critico di livello problematico. Si considera coinvo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#86</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-70-cve-2026-90033-linux-kernel-fino-a-7-3-rc1-alsa-us.html" class="card-title">CVE-2026-90033 | Linux Kernel fino a 7.3-rc1 ALSA usb-audio snd_usbmidi_us122l_output max_transfer buffer overflow</a>
+      <p class="card-desc">Un punto critico di livello estremamente critico è stato rilevato in Linux Kernel fino a 7.3-rc1. Risulta coinvolta una funzione sconosciuta...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#87</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-71-cve-2026-90032-linux-kernel-fino-a-7-2-4-usbtv-snd.html" class="card-title">CVE-2026-90032 | Linux Kernel fino a 7.2.4 usbtv snd_usbtv_pcm_close buffer overflow</a>
+      <p class="card-desc">In Linux Kernel fino a 7.2.4 stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato la funzione snd_usbt...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#88</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-72-cve-2026-90031-linux-kernel-fino-a-7-3-rc1-ene-ub6.html" class="card-title">CVE-2026-90031 | Linux Kernel fino a 7.3-rc1 ene_ub6250 ene_ub6250_probe race condition</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello critico in Linux Kernel fino a 7.3-rc1. É interessato la funzione ene_ub6250_probe del compone...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#89</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-73-cve-2026-90040-linux-kernel-fino-a-7-2-4-kvm-sev-s.html" class="card-title">CVE-2026-90040 | Linux Kernel fino a 7.2.4 KVM SEV-SNP arch/x86/kvm/svm/sev.c sev_gmem_invalidate buffer overflow</a>
+      <p class="card-desc">Una vulnerabilità di livello critico è stata rilevata in Linux Kernel fino a 7.2.4. Riguarda la funzione sev_gmem_invalidate del file arch/x...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#90</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-74-cve-2026-90030-linux-kernel-fino-a-6-18-50-7-2-4-7.html" class="card-title">CVE-2026-90030 | Linux Kernel fino a 6.18.50/7.2.4/7.3-rc1 dwc3 ep_dequeue buffer overflow</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come estremamente critico in Linux Kernel fino a 6.18.50/7.2.4/7.3-rc1. Viene interessata una...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#91</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-75-cve-2026-90009-linux-kernel-fino-a-7-2-4-7-3-rc1-b.html" class="card-title">CVE-2026-90009 | Linux Kernel fino a 7.2.4/7.3-rc1 bsg scsi_bsg_uring_cmd race condition</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come estremamente critico in Linux Kernel fino a 7.2.4/7.3-rc1. Si considera coinvolta una f...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#92</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-76-cve-2026-90028-linux-kernel-fino-a-7-2-4-7-3-rc1-h.html" class="card-title">CVE-2026-90028 | Linux Kernel fino a 7.2.4/7.3-rc1 hd3ss3220 regulator_is_enabled escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come estremamente critico in Linux Kernel fino a 7.2.4/7.3-rc1. Risulta coinvolta una funzio...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#93</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-77-cve-2026-90026-linux-kernel-fino-a-7-3-rc1-qcom-pm.html" class="card-title">CVE-2026-90026 | Linux Kernel fino a 7.3-rc1 qcom-pmic pdphy_stop buffer overflow</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in Linux Kernel fino a 6.6.156/6.12.109/6.18.50/7.2.4/7.3-rc1. Da questa vul...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#94</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-78-cve-2026-90027-linux-kernel-fino-a-6-12-109-6-18-5.html" class="card-title">CVE-2026-90027 | Linux Kernel fino a 6.12.109/6.18.50/7.2.4/7.3-rc1 qcom-pmic-typec port_stop Esecuzione di codice remoto</a>
+      <p class="card-desc">Un punto di debole di livello estremamente critico è stato rilevato in Linux Kernel fino a 6.12.109/6.18.50/7.2.4/7.3-rc1. É interessato la ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#95</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-79-cve-2026-90025-linux-kernel-fino-a-7-3-rc1-ucsi-di.html" class="card-title">CVE-2026-90025 | Linux Kernel fino a 7.3-rc1 UCSI displayport driver rivelazione di informazioni</a>
+      <p class="card-desc">Un punto di criticita di livello critico è stato rilevato in Linux Kernel fino a 7.3-rc1. Riguarda una funzione sconosciuta del componente U...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#96</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-80-cve-2026-90022-linux-kernel-fino-a-7-3-rc1-f-midi2.html" class="card-title">CVE-2026-90022 | Linux Kernel fino a 7.3-rc1 f_midi2 f_midi2_opts_str_show buffer overflow</a>
+      <p class="card-desc">In Linux Kernel fino a 6.6.156/6.12.109/6.18.50/7.2.4/7.3-rc1 è stato trovato un punto critico di livello critico. Viene interessata una fun...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#97</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-81-cve-2026-90024-linux-kernel-fino-a-7-3-rc1-usb-mid.html" class="card-title">CVE-2026-90024 | Linux Kernel fino a 7.3-rc1 USB MIDI 2.0 Gadget f_midi2.c f_midi2_free_ep_reqs negazione del servizio</a>
+      <p class="card-desc">In Linux Kernel fino a 6.6.156/6.12.109/6.18.50/7.2.4/7.3-rc1 è stata rilevato un punto critico di livello problematico. Si considera coinvo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#98</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-82-cve-2026-90021-linux-kernel-fino-a-6-12-109-6-18-5.html" class="card-title">CVE-2026-90021 | Linux Kernel fino a 6.12.109/6.18.50/7.2.4/7.3-rc1 f_midi f_midi_alloc negazione del servizio</a>
+      <p class="card-desc">Un punto critico di livello critico è stato rilevato in Linux Kernel fino a 6.12.109/6.18.50/7.2.4/7.3-rc1. Risulta coinvolta una funzione s...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#99</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-83-cve-2026-90019-linux-kernel-fino-a-7-3-rc1-gadget-.html" class="card-title">CVE-2026-90019 | Linux Kernel fino a 7.3-rc1 Gadget usb_put_function_instance fd negazione del servizio</a>
+      <p class="card-desc">In Linux Kernel fino a 7.3-rc1 stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato la funzione usb_pu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#100</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-84-cve-2026-90015-linux-kernel-fino-a-7-3-rc1-xhci-xh.html" class="card-title">CVE-2026-90015 | Linux Kernel fino a 7.3-rc1 xHCI xhci_unmap_td_bounce_buffer negazione del servizio</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello estremamente critico in Linux Kernel fino a 7.3-rc1. É interessato la funzione xhci_unmap_td_b...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#101</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-85-cve-2026-90014-linux-kernel-fino-a-7-2-4-7-3-rc1-t.html" class="card-title">CVE-2026-90014 | Linux Kernel fino a 7.2.4/7.3-rc1 Tracing buffer overflow</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in Linux Kernel fino a 7.2.4/7.3-rc1. Riguarda una funzione sconosciuta del compo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#102</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-86-cve-2026-90013-linux-kernel-fino-a-6-18-51-7-2-4-7.html" class="card-title">CVE-2026-90013 | Linux Kernel fino a 6.18.51/7.2.4/7.3-rc1 tracing trace_array_options_get buffer overflow</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come estremamente critico in Linux Kernel fino a 6.18.51/7.2.4/7.3-rc1. Viene interessata una...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#103</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-87-cve-2026-90012-linux-kernel-fino-a-6-12-109-6-18-5.html" class="card-title">CVE-2026-90012 | Linux Kernel fino a 6.12.109/6.18.50/7.2.4 spi __spi_map_msg negazione del servizio</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Linux Kernel fino a 6.12.109/6.18.50/7.2.4. Si considera coinvolta una ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#104</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-88-cve-2026-90029-linux-kernel-fino-a-6-18-50-7-2-4-7.html" class="card-title">CVE-2026-90029 | Linux Kernel fino a 6.18.50/7.2.4/7.3-rc1 Realtek CR Driver realtek_cr_destructor buffer overflow</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come estremamente critico in Linux Kernel fino a 6.18.50/7.2.4/7.3-rc1. Risulta coinvolta un...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#105</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-89-cve-2026-90010-linux-kernel-fino-a-7-2-4-7-3-rc1-b.html" class="card-title">CVE-2026-90010 | Linux Kernel fino a 7.2.4/7.3-rc1 bsg sense_len/max_response_len buffer overflow</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come estremamente critico in Linux Kernel fino a 7.2.4/7.3-rc1. Da questa vulnerabilità è...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#106</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-90-cve-2026-90023-linux-kernel-fino-a-6-18-51-7-2-4-7.html" class="card-title">CVE-2026-90023 | Linux Kernel fino a 6.18.51/7.2.4/7.3-rc1 f_mass_storage fsg_common_set_num_buffers negazione del servizio</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in Linux Kernel fino a 6.18.51/7.2.4/7.3-rc1. É interessato la funzione fsg_comm...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#107</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-91-cve-2026-90020-linux-kernel-fino-a-7-3-rc1-gadget-.html" class="card-title">CVE-2026-90020 | Linux Kernel fino a 7.3-rc1 gadget gadget_dev_ioctl negazione del servizio</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Linux Kernel fino a 7.3-rc1. Riguarda la funzione gadget_dev_ioctl del com...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#108</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-92-cve-2026-90018-linux-kernel-fino-a-7-3-rc1-rtl8723.html" class="card-title">CVE-2026-90018 | Linux Kernel fino a 7.3-rc1 rtl8723bs ioctl_cfg80211.c rtw_get_wps_attr buffer overflow</a>
+      <p class="card-desc">In Linux Kernel fino a 7.3-rc1 è stato trovato un punto critico di livello estremamente critico. Viene interessata una funzione sconosciuta ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#109</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-93-cve-2026-90017-linux-kernel-fino-a-7-3-rc1-rtl8723.html" class="card-title">CVE-2026-90017 | Linux Kernel fino a 7.3-rc1 rtl8723bs ioctl_cfg80211.c rtw_action_frame_parse frame_len rivelazione di informazioni</a>
+      <p class="card-desc">In Linux Kernel fino a 7.3-rc1 è stata rilevato un punto critico di livello critico. Si considera coinvolta una funzione sconosciuta nel fil...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#110</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-94-cve-2026-90016-linux-kernel-fino-a-6-18-51-7-2-4-7.html" class="card-title">CVE-2026-90016 | Linux Kernel fino a 6.18.51/7.2.4/7.3-rc1 rtl8723bs rtw_restruct_wmm_ie rivelazione di informazioni</a>
+      <p class="card-desc">Un punto critico di livello estremamente critico è stato rilevato in Linux Kernel fino a 6.18.51/7.2.4/7.3-rc1. Risulta coinvolta una funzio...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#111</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-95-cve-2026-90011-linux-kernel-fino-a-7-3-rc1-iscsi-i.html" class="card-title">CVE-2026-90011 | Linux Kernel fino a 7.3-rc1 Iscsi iscsi_target_check_login_request buffer overflow</a>
+      <p class="card-desc">In Linux Kernel fino a 7.3-rc1 stata rilevata una vulnerabilità di livello estremamente critico. Da questa vulnerabilità è interessato la fu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#112</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-97-cve-2026-73164-advantech-eki-1242ieims-eki-1242eim.html" class="card-title">CVE-2026-73164 | Advantech EKI-1242IEIMS/EKI-1242EIMS fino a 1.06.01 Web Management Interface escalationi di privilegi</a>
+      <p class="card-desc">Una vulnerabilità di livello estremamente critico è stata rilevata in Advantech EKI-1242IEIMS and EKI-1242EIMS fino a 1.06.01. Riguarda una ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#113</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-98-cve-2026-73163-advantech-eki-1242ieims-eki-1242eim.html" class="card-title">CVE-2026-73163 | Advantech EKI-1242IEIMS/EKI-1242EIMS fino a 1.06.01 Web Management Interface escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come estremamente critico in Advantech EKI-1242IEIMS and EKI-1242EIMS fino a 1.06.01. Viene i...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#114</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-99-cve-2026-89955-linux-kernel-fino-a-6-6-156-6-12-10.html" class="card-title">CVE-2026-89955 | Linux Kernel fino a 6.6.156/6.12.109/6.18.50/7.2.4 s390-vfio-ap status_show negazione del servizio</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come critico in Linux Kernel fino a 6.6.156/6.12.109/6.18.50/7.2.4. Si considera coinvolta u...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#115</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-100-cve-2026-89954-linux-kernel-fino-a-7-2-4-afs-buffe.html" class="card-title">CVE-2026-89954 | Linux Kernel fino a 7.2.4 AFS buffer overflow</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in Linux Kernel fino a 7.2.4. Risulta coinvolta una funzione sconosciuta del co...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#116</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-101-attacker-hijacks-ai-coding-assistant-session-sprea.html" class="card-title">Attacker Hijacks AI Coding Assistant Session, Spreads Shai-Hulud Across About 100 Repositories</a>
+      <p class="card-desc">Mandiant says an attacker hijacked an active AI coding-assistant session at an unnamed software-as-a-service provider and later spread&amp;nbsp;...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#117</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-102-parallels-desktop-flaw-lets-non-admin-mac-users-ga.html" class="card-title">Parallels Desktop Flaw Lets Non-Admin Mac Users Gain Root, but Intel Macs Can&#39;t Install Fix</a>
+      <p class="card-desc">Parallels Desktop for Mac has a flaw that lets an ordinary local account run code as root, the highest level of access on a Mac, software co...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#118</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-103-n0va-phishkit-targets-us-and-eu-businesses-a-new-c.html" class="card-title">N0va Phishkit Targets US and EU Businesses: A New Challenge for Identity Security</a>
+      <p class="card-desc">N0va is targeting organizations across North America and Europe with phishing campaigns that impersonate trusted services and abuse legitima...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#119</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-105-threat-intelligence-alone-won-t-close-the-exploita.html" class="card-title">Threat Intelligence Alone Won&#39;t Close the Exploitation Gap</a>
+      <p class="card-desc">A leaked credential shows up in a criminal marketplace, or a vulnerability gets a disclosure advisory, and either one can be weaponized agai...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#120</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-109-kremlin-banking-malware-hijacks-chrome-and-edge-to.html" class="card-title">KREMLIN Banking Malware Hijacks Chrome and Edge to Steal Credentials and Session Tokens</a>
+      <p class="card-desc">Cybersecurity researchers have shed light on a previously undocumented Brazilian banking malware operation that delivers a toolkit called KR...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#121</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-110-iranian-hackers-use-telegram-controlled-malware-to.html" class="card-title">Iranian Hackers Use Telegram-Controlled Malware to Spy on Dissidents and Journalists</a>
+      <p class="card-desc">Cybersecurity agencies in the United States, the United Kingdom, and the Netherlands have detailed a Windows malware that they say Iran&#39;s in...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#122</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-111-bambootoken-malware-uses-mqtt-to-control-windows-a.html" class="card-title">BambooToken Malware Uses MQTT to Control Windows and Linux Systems</a>
+      <p class="card-desc">Cybersecurity researchers have disclosed details of a multi-platform campaign that uses the Message Queueing Telemetry Transport (MQTT) prot...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#123</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-112-the-true-cost-of-a-ransomware-attack-with-and-with.html" class="card-title">The true cost of a ransomware attack, with and without BCDR</a>
+      <p class="card-desc">The ransom itself can be only a fraction of the total cost of a ransomware attack, with downtime, recovery, remediation, and legal obligatio...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#124</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-113-microsoft-says-copilot-buttons-still-missing-in-cl.html" class="card-title">Microsoft says Copilot buttons still missing in classic Outlook</a>
+      <p class="card-desc">Microsoft says it&#39;s still investigating a known issue that causes the Copilot and Copilot Chat buttons in Classic Outlook to disappear for s...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#125</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-114-webinar-what-happens-in-the-first-hours-of-a-googl.html" class="card-title">Webinar: What happens in the first hours of a Google Workspace breach</a>
+      <p class="card-desc">The first hours after discovering a Google Workspace breach can determine how an incident unfolds. This webinar examines real-world breaches...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#126</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-116-windows-server-2022-reaches-end-of-mainstream-supp.html" class="card-title">Windows Server 2022 reaches end of mainstream support next month</a>
+      <p class="card-desc">Microsoft has reminded customers that Windows Server 2022 will reach the end of mainstream support next month and enter extended support unt...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#127</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-119-malcious-admin-menu-editor-pro-plugin-backdoors-1-.html" class="card-title">Malcious Admin Menu Editor Pro plugin backdoors 1,500 WordPress sites</a>
+      <p class="card-desc">Malicious versions of the Admin Menu Editor Pro plugin for WordPress have been distributed to more than 200 customers after a threat actor c...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#128</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-120-centerpoint-energy-confirms-customer-data-stolen-i.html" class="card-title">CenterPoint Energy confirms customer data stolen in cyberattack</a>
+      <p class="card-desc">CenterPoint Energy disclosed a breach compromising some customers&#39; personal information after an attacker leaked data allegedly stolen from ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#129</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-121-cyber-op-targets-south-korean-media-amp-automotive.html" class="card-title">Cyber Op Targets South Korean Media &amp;amp; Automotive Sectors</a>
+      <p class="card-desc">A likely North Korean advanced persistent threat (APT) group used a previously undocumented Linux espionage toolkit to compromise load balan...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#130</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-122-microsoft-issues-emergency-fixes-after-massive-pat.html" class="card-title">Microsoft Issues Emergency Fixes After Massive Patch Tuesday</a>
+      <p class="card-desc">You can&#39;t make an omelet without breaking a few eggs, and you can&#39;t patch nearly 1,000 CVEs without a few glitches.</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#131</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-124-vectrarat-can-hack-windows-enterprises-for-250-per.html" class="card-title">VectraRAT Can Hack Windows Enterprises for $250 per Month</a>
+      <p class="card-desc">The full-service malware-as-a-service (MaaS) platform offers a Windows implant, command-and-control (C2) infrastructure, and an operator pan...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#132</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-125-virtual-event-what-every-enterprise-should-know-ab.html" class="card-title">[Virtual Event] What Every Enterprise Should Know About Securing Cloud Assets in the Age of AI</a>
+      <p class="card-desc"></p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#133</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-126-ghostcode-phishing-kit-bypasses-microsoft-365-mfa-.html" class="card-title">GhostCode Phishing Kit Bypasses Microsoft 365 MFA to Hijack Accounts in 78 Seconds</a>
+      <p class="card-desc">GhostCode is a newly identified phishing kit that turns a normal Microsoft 365 sign-in into an account takeover. It does not need to steal a...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#134</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-127-microsoft-365-hit-by-new-outage-as-users-report-wi.html" class="card-title">Microsoft 365 Hit by New Outage as Users Report Widespread 502 and 503 Errors</a>
+      <p class="card-desc">Microsoft has confirmed a fresh service degradation affecting its Microsoft 365 suite, with users worldwide reporting an inability to access...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#135</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-128-hackers-can-rent-vectrarat-for-250-a-month-to-take.html" class="card-title">Hackers Can Rent VectraRAT for $250 a Month to Take Control of Windows PCs</a>
+      <p class="card-desc">Hackers can now rent a Windows-focused remote access tool called VectraRAT for $250 a month, lowering the barrier to deep and persistent com...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#136</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-129-hackers-use-cross-platform-noodle-rat-to-secretly-.html" class="card-title">Hackers Use Cross-Platform Noodle RAT to Secretly Control Windows and Linux Systems</a>
+      <p class="card-desc">Noodle RAT is a remote-access trojan that gives attackers control of compromised computers and servers. Its renewed visibility matters becau...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#137</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-130-smishing-hackers-can-watch-every-keystroke-as-vict.html" class="card-title">Smishing Hackers Can Watch Every Keystroke as Victims Enter Card Details and OTPs</a>
+      <p class="card-desc">A new SMS phishing campaign turns a routine payment check into a live fraud session. Victims who tap a link reach convincing pages seeking c...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#138</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-132-apache-syncope-vulnerabilities-allow-attackers-to-.html" class="card-title">Apache Syncope Vulnerabilities Allow Attackers to Execute Malicious Code and Bypass Controls</a>
+      <p class="card-desc">Apache Syncope has disclosed three important security vulnerabilities that could allow authorized administrators to execute malicious SQL co...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#139</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-136-virtual-event-today-attack-surface-management-summ.html" class="card-title">Virtual Event Today: Attack Surface Management Summit</a>
+      <p class="card-desc">Join SecurityWeek today for a virtual summit exploring the strategies and tools organizations need to discover, prioritize, and defend their...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#140</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-137-eu-chief-warns-of-ai-powered-hacking-moves-to-rein.html" class="card-title">EU Chief Warns of AI-Powered Hacking, Moves to Rein In Social Media</a>
+      <p class="card-desc">Ursula von der Leyen warns that advanced AI could unleash hacking on an unprecedented scale as Europe prepares new protections against socia...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#141</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-138-aiuc-raises-40-million-to-certify-enterprise-ai-ag.html" class="card-title">AIUC Raises $40 Million to Certify Enterprise AI Agents</a>
+      <p class="card-desc">The company provides a standard for AI systems, testing them against risks such as jailbreaks, prompt injections, and unauthorized actions. ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#142</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-140-us-uk-dutch-agencies-expose-iranian-chosen-brick-s.html" class="card-title">US, UK, Dutch Agencies Expose Iranian ‘Chosen Brick’ Surveillance Malware</a>
+      <p class="card-desc">US, UK, and Dutch government agencies published a report detailing the malware, and the FBI described the abuse of Telegram for C&amp;#038;C. Th...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#143</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-142-hackuity-raises-19-million-for-ai-powered-vulnerab.html" class="card-title">Hackuity Raises $19 Million for AI-Powered Vulnerability Management</a>
+      <p class="card-desc">The company will use the new capital to expand its vulnerability operations platform and support international growth. The post Hackuity Rai...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#144</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-143-280-000-impacted-by-premier-medical-group-data-bre.html" class="card-title">280,000 Impacted by Premier Medical Group Data Breach</a>
+      <p class="card-desc">In June 2026, hackers accessed files containing patients’ names, contact information, diagnosis details, and health insurance information. T...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#145</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-144-chrome-firefox-updates-patch-115-vulnerabilities.html" class="card-title">Chrome, Firefox Updates Patch 115 Vulnerabilities</a>
+      <p class="card-desc">Google resolved 42 security defects in Chrome, and Mozilla fixed 73 bugs in Firefox. The post Chrome, Firefox Updates Patch 115 Vulnerabilit...</p>
+    </div>
+</div>
+
+<div class="no-results" id="no-results">
+  <p>Nessun risultato trovato</p>
+</div>
+
+<footer class="footer">
+  <p>Cyber Security News Dashboard - Generato automaticamente senza amore o sentimento</p>
+  <p>Creato (con n8n e un pochino di javascript scritto da un LLM) da: <a href="https://www.linkedin.com/in/mocciaalessandro" target="_blank">Alessandro</a></p>
+</footer>
+
+<script>
+(function() {
+  const cards = document.querySelectorAll('.card');
+  const buttons = document.querySelectorAll('[data-filter]');
+  const searchInput = document.getElementById('search');
+  const noResults = document.getElementById('no-results');
+  
+  let currentFilter = 'all';
+  let searchTerm = '';
+
+  const filterCards = () => {
+    let visibleCount = 0;
+    
+    cards.forEach(card => {
+      const matchesFilter = currentFilter === 'all' || card.dataset.severity === currentFilter;
+      const matchesSearch = !searchTerm || card.textContent.toLowerCase().includes(searchTerm);
+      const isVisible = matchesFilter && matchesSearch;
+      
+      card.style.display = isVisible ? 'block' : 'none';
+      if (isVisible) visibleCount++;
+    });
+    
+    noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+  };
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      filterCards();
+    });
+  });
+
+  let debounceTimer;
+  searchInput.addEventListener('input', (e) => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      searchTerm = e.target.value.toLowerCase();
+      filterCards();
+    }, 150);
+  });
+})();
+</script>
+
+</body>
+</html>
