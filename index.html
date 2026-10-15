@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyber Security News Dashboard</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --primary: #00ff9f;
+      --primary-dim: #00cc7a;
+      --card-bg: #111;
+      --border: rgba(0, 255, 159, 0.2);
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--primary);
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.5;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      font-size: clamp(1.2rem, 4vw, 2rem);
+      text-shadow: 0 0 20px var(--primary);
+      margin: 0 0 10px 0;
+    }
+    .header time {
+      font-size: 0.85rem;
+      opacity: 0.7;
+    }
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 25px;
+    }
+    .stat {
+      padding: 8px 15px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      background: var(--card-bg);
+    }
+    .stat.critical { border-color: #ff4444; }
+    .stat.high { border-color: #ff8c00; }
+    .stat.medium { border-color: #ffd700; }
+    .stat.low { border-color: var(--primary-dim); }
+    .controls {
+      max-width: 900px;
+      margin: 0 auto 25px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .search-wrapper {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+    .search-wrapper::before {
+      content: '🔍';
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+    }
+    input {
+      width: 100%;
+      padding: 10px 10px 10px 35px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--primary);
+      font-family: inherit;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .filter-buttons {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 10px 15px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--primary);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    button:hover, button.active {
+      background: var(--primary);
+      color: var(--bg);
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      display: grid;
+      gap: 15px;
+    }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 15px;
+      background: var(--card-bg);
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .index {
+      font-size: 12px;
+      opacity: 0.6;
+    }
+    .badge {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    .critical { background: #ff4444; color: #fff; }
+    .high { background: #ff8c00; color: #000; }
+    .medium { background: #ffd700; color: #000; }
+    .low { background: var(--primary-dim); color: #000; }
+    .card-title {
+      display: block;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: bold;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .card-title:hover { text-decoration: underline; }
+    .card-desc {
+      font-size: 12px;
+      color: var(--primary-dim);
+      margin: 0;
+    }
+    .no-results {
+      text-align: center;
+      padding: 40px;
+      opacity: 0.6;
+      display: none;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      opacity: 0.6;
+      text-align: center;
+    }
+    @media (max-width: 600px) {
+      .controls { flex-direction: column; }
+      .filter-buttons { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🛡️ CYBER SECURITY NEWS DASHBOARD</h1>
+  <time datetime="2026-10-15T20:03:15.830Z">15/10/2026, 20:03</time>
+</div>
+
+<div class="stats">
+  <div class="stat">📊 Totale: <strong>84</strong></div>
+  <div class="stat critical">🔴 Critical: <strong>9</strong></div>
+  <div class="stat high">🟠 High: <strong>1</strong></div>
+  <div class="stat medium">🟡 Medium: <strong>1</strong></div>
+  <div class="stat low">🟢 Low: <strong>73</strong></div>
+</div>
+
+<div class="controls">
+  <div class="search-wrapper">
+    <input type="search" id="search" placeholder="Cerca nelle notizie..." aria-label="Cerca">
+  </div>
+  <div class="filter-buttons">
+    <button class="active" data-filter="all">Tutte</button>
+    <button data-filter="critical">Critical</button>
+    <button data-filter="high">High</button>
+    <button data-filter="medium">Medium</button>
+    <button data-filter="low">Low</button>
+  </div>
+</div>
+
+<div class="container" id="cards">
+  
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#01</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-42-next-js-ships-out-of-band-patch-for-two-critical-r.html" class="card-title">Next.js Ships Out-of-Band Patch for Two Critical RCE Flaws in Caching and SVG Processing</a>
+      <p class="card-desc">Next.js released an&amp;nbsp;out-of-band security update&amp;nbsp;on October 14 that fixes two critical flaws allowing unauthenticated remote code e...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#02</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-43-drupal-patches-critical-field-ui-flaw-with-unauthe.html" class="card-title">Drupal Patches Critical Field UI Flaw With Unauthenticated RCE Path via Contributed Modules</a>
+      <p class="card-desc">Drupal core has a critical flaw in its Field UI module that could let an attacker run code on the site&#39;s server, and fixes were shipped on O...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#03</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-45-palo-alto-networks-patches-pan-os-authenticated-rc.html" class="card-title">Palo Alto Networks Patches PAN-OS Authenticated RCE Flaw Amid Active Exploitation</a>
+      <p class="card-desc">Palo Alto Networks on Wednesday issued security updates for a high-severity flaw in PAN-OS software that has come under active exploitation....</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#04</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-49-langflow-s-critical-authenticated-rce-flaw-targete.html" class="card-title">Langflow&#39;s Critical Authenticated RCE Flaw Targeted in 1,423 Honeypot Exploit Attempts</a>
+      <p class="card-desc">Threat actors are exploiting a critical security flaw in Langflow, according to an alert from Previdian. Langflow is an open-source platform...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#05</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-59-palo-alto-networks-warns-of-pan-os-rce-flaw-exploi.html" class="card-title">Palo Alto Networks warns of PAN-OS RCE flaw exploited in attacks</a>
+      <p class="card-desc">Palo Alto Networks has released security updates for a high-severity PAN-OS RCE zero-day, tracked as CVE-2026-0322, that has been exploited ...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#06</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-62-ivanti-ics-zero-day-attacks-highlight-vendor-patch.html" class="card-title">Ivanti ICS Zero-Day Attacks Highlight Vendor Patching Hurdles</a>
+      <p class="card-desc">CVE-2026-104935, a high-severity authentication bypass + RCE vulnerability, was only partially discovered and patched in July, leaving an op...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#07</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-66-critical-chatgpt-github-connector-flaw-could-allow.html" class="card-title">Critical ChatGPT GitHub Connector Flaw Could Allow Attackers to Steal Private Repository Secrets</a>
+      <p class="card-desc">A critical flaw in ChatGPT’s GitHub integration has the potential to turn a routine repository review into a secret-theft attack. A report p...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#08</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-74-critical-next-js-vulnerabilities-allow-hackers-to-.html" class="card-title">Critical Next.js Vulnerabilities Allow Hackers to Execute Malicious Code Remotely</a>
+      <p class="card-desc">Next.js has released security updates for two critical vulnerabilities that could let remote attackers run malicious code without logging in...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#09</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-83-palo-alto-networks-patches-pan-os-zero-day-exploit.html" class="card-title">Palo Alto Networks Patches PAN-OS Zero-Day Exploited for Remote Code Execution</a>
+      <p class="card-desc">The company says it’s aware of limited exploitation against customers’ firewalls, and it has made IoCs available. The post Palo Alto Network...</p>
+    </div>
+    <div class="card" data-severity="high">
+      <div class="card-top">
+        <span class="index">#10</span>
+        <span class="badge high">high</span>
+      </div>
+      <a href="news-67-citrix-xenserver-vulnerabilities-could-allow-malic.html" class="card-title">Citrix XenServer Vulnerabilities Could Allow Malicious VM Users to Compromise Host Systems</a>
+      <p class="card-desc">Citrix has disclosed four XenServer vulnerabilities, including three that could let a malicious user with elevated rights inside a virtual m...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#11</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-12-cve-2026-0316-palo-alto-networks-pan-os-web-interf.html" class="card-title">CVE-2026-0316 | Palo Alto Networks PAN-OS Web Interface cross site scripting</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in Palo Alto Networks PAN-OS. Riguarda una funzione sconosciuta del componente We...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#12</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-1-cve-2026-77427-error311-filerise-fino-a-3-21-x-per.html" class="card-title">CVE-2026-77427 | error311 FileRise fino a 3.21.x persistent_tokens.key autenticazione debole</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in error311 FileRise fino a 3.21.x. Viene interessata una funzione sconosci...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#13</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-2-cve-2026-104105-error311-filerise-fino-a-3-22-x-au.html" class="card-title">CVE-2026-104105 | error311 FileRise fino a 3.22.x autenticazione debole</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come critico in error311 FileRise fino a 3.22.x. Si considera coinvolta una funzione sconosc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#14</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-3-cve-2026-103977-error311-filerise-fino-a-3-22-x-to.html" class="card-title">CVE-2026-103977 | error311 FileRise fino a 3.22.x TOTP SESSION rivelazione di informazioni</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in error311 FileRise fino a 3.22.x. Risulta coinvolta una funzione sconosc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#15</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-4-cve-2026-104109-error311-filerise-fino-a-3-22-x-ar.html" class="card-title">CVE-2026-104109 | error311 FileRise fino a 3.22.x Archive Extraction ZipArchive::extractTo escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in error311 FileRise fino a 3.22.x. Da questa vulnerabilità è interessa...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#16</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-5-cve-2026-104107-error311-filerise-fino-a-3-22-0-fo.html" class="card-title">CVE-2026-104107 | error311 FileRise fino a 3.22.0 Folder Input /api/file/saveFile.php directory traversal</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in error311 FileRise fino a 3.22.0. É interessato una funzione sconosciuta del f...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#17</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-6-cve-2026-104110-error311-filerise-fino-a-3-23-x-po.html" class="card-title">CVE-2026-104110 | error311 FileRise fino a 3.23.x Portal /api/pro/portals/get.php portal slug escalationi di privilegi</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in error311 FileRise fino a 3.23.x. Riguarda una funzione sconosciuta del fil...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#18</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-7-cve-2026-103988-error311-filerise-fino-a-3-22-x-re.html" class="card-title">CVE-2026-103988 | error311 FileRise fino a 3.22.x Rename Folder renameFolder.php escalationi di privilegi</a>
+      <p class="card-desc">In error311 FileRise fino a 3.22.x è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciuta appa...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#19</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-8-cve-2026-0312-palo-alto-networks-checkov-fino-a-3-.html" class="card-title">CVE-2026-0312 | Palo Alto Networks Checkov fino a 3.3.24 directory traversal</a>
+      <p class="card-desc">In Palo Alto Networks Checkov fino a 3.3.24 è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzione s...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#20</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-9-cve-2026-0311-palo-alto-networks-checkov-by-prisma.html" class="card-title">CVE-2026-0311 | Palo Alto Networks Checkov by Prisma Cloud fino a 3.2.532 escalationi di privilegi</a>
+      <p class="card-desc">Un punto critico di livello critico è stato rilevato in Palo Alto Networks Checkov by Prisma Cloud fino a 3.2.532. Risulta coinvolta una fun...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#21</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-10-cve-2026-0314-palo-alto-networks-globalprotect-app.html" class="card-title">CVE-2026-0314 | Palo Alto Networks GlobalProtect App escalationi di privilegi</a>
+      <p class="card-desc">In Palo Alto Networks GlobalProtect App stata rilevata una vulnerabilità di livello problematico. Da questa vulnerabilità è interessato una ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#22</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-11-cve-2026-0315-palo-alto-networks-globalprotect-app.html" class="card-title">CVE-2026-0315 | Palo Alto Networks GlobalProtect App escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in Palo Alto Networks GlobalProtect App. É interessato una funzione sconosciuta. ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#23</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-13-cve-2026-0313-palo-alto-networks-cortex-xsoar-os-q.html" class="card-title">CVE-2026-0313 | Palo Alto Networks Cortex XSOAR OS Query/Cortex XSIAM OS Query fino a 1.0.16 OS Query content pack escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come estremamente critico in Palo Alto Networks Cortex XSOAR OS Query and Cortex XSIAM OS Que...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#24</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-14-cve-2026-61844-error311-filerise-fino-a-3-17-x-esc.html" class="card-title">CVE-2026-61844 | error311 FileRise fino a 3.17.x escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come critico in error311 FileRise fino a 3.17.x. Si considera coinvolta una funzione sconosc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#25</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-15-cve-2026-57493-error311-filerise-fino-a-3-15-x-rem.html" class="card-title">CVE-2026-57493 | error311 FileRise fino a 3.15.x Remember-Me Token users.txt isAdmin escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in error311 FileRise fino a 3.15.x. Risulta coinvolta una funzione sconosciuta ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#26</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-16-cve-2026-0317-palo-alto-networks-pan-os-api-negazi.html" class="card-title">CVE-2026-0317 | Palo Alto Networks PAN-OS API negazione del servizio</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in Palo Alto Networks PAN-OS. Da questa vulnerabilità è interessato una...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#27</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-17-cve-2026-57492-error311-filerise-fino-a-3-15-x-set.html" class="card-title">CVE-2026-57492 | error311 FileRise fino a 3.15.x Setup users.txt escalationi di privilegi</a>
+      <p class="card-desc">Un punto di debole di livello critico è stato rilevato in error311 FileRise fino a 3.15.x. É interessato una funzione sconosciuta del file u...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#28</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-18-cve-2026-62664-error311-filerise-fino-a-3-18-x-fol.html" class="card-title">CVE-2026-62664 | error311 FileRise fino a 3.18.x Folder Creation createFolder.php createFolder folderName directory traversal</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in error311 FileRise fino a 3.18.x. Riguarda la funzione FolderModel::createF...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#29</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-19-cve-2026-61843-error311-filerise-fino-a-3-17-x-api.html" class="card-title">CVE-2026-61843 | error311 FileRise fino a 3.17.x /api/upload/upload.php escalationi di privilegi</a>
+      <p class="card-desc">In error311 FileRise fino a 3.17.x è stato trovato un punto critico di livello critico. Viene interessata una funzione sconosciuta appartene...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#30</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-20-cve-2026-64856-error311-filerise-fino-a-3-19-x-api.html" class="card-title">CVE-2026-64856 | error311 FileRise fino a 3.19.x /api/file/snippet.php autenticazione debole</a>
+      <p class="card-desc">In error311 FileRise fino a 3.19.x è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzione sconosciut...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#31</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-21-cve-2026-71854-openaev-platform-openaev-2-0-13-les.html" class="card-title">CVE-2026-71854 | OpenAEV-Platform OpenAEV 2.0.13 Lessons Endpoint userId autenticazione debole</a>
+      <p class="card-desc">Un punto critico di livello critico è stato rilevato in OpenAEV-Platform OpenAEV 2.0.13. Risulta coinvolta una funzione sconosciuta del comp...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#32</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-22-cve-2026-96540-sonicwall-network-security-manager-.html" class="card-title">CVE-2026-96540 | SonicWall Network Security Manager Export Settings escalationi di privilegi</a>
+      <p class="card-desc">In SonicWall Network Security Manager stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato una funzion...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#33</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-23-cve-2026-100232-sonicwall-network-security-manager.html" class="card-title">CVE-2026-100232 | SonicWall Network Security Manager escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello estremamente critico in SonicWall Network Security Manager. É interessato una funzione sconosc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#34</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-24-cve-2026-0319-palo-alto-networks-pan-os-globalprot.html" class="card-title">CVE-2026-0319 | Palo Alto Networks PAN-OS GlobalProtect autenticazione debole</a>
+      <p class="card-desc">Una vulnerabilità di livello estremamente critico è stata rilevata in Palo Alto Networks PAN-OS. Riguarda una funzione sconosciuta del compo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#35</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-25-cve-2026-0318-palo-alto-networks-panorama-log-proc.html" class="card-title">CVE-2026-0318 | Palo Alto Networks Panorama Log Processing buffer overflow</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come critico in Palo Alto Networks Panorama. Viene interessata una funzione sconosciuta appar...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#36</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-26-cve-2026-0320-palo-alto-networks-pan-os-panorama-m.html" class="card-title">CVE-2026-0320 | Palo Alto Networks PAN-OS/Panorama Management Interface escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come estremamente critico in Palo Alto Networks PAN-OS and Panorama. Si considera coinvolta ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#37</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-27-cve-2026-57489-error311-filerise-fino-a-3-15-x-x-r.html" class="card-title">CVE-2026-57489 | error311 FileRise fino a 3.15.x X-Remote-User autenticazione debole</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in error311 FileRise fino a 3.15.x. Risulta coinvolta una funzione sconosciuta....</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#38</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-28-cve-2026-57490-error311-filerise-fino-a-3-15-x-web.html" class="card-title">CVE-2026-57490 | error311 FileRise fino a 3.15.x WebDAV public/webdav.php AuthModel::authenticate autenticazione debole</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in error311 FileRise fino a 3.15.x. Da questa vulnerabilità è interessato la...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#39</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-29-cve-2026-57491-error311-filerise-fino-a-3-15-x-arc.html" class="card-title">CVE-2026-57491 | error311 FileRise fino a 3.15.x Archive Extraction ZipArchive::extractTo escalationi di privilegi</a>
+      <p class="card-desc">Un punto di debole di livello critico è stato rilevato in error311 FileRise fino a 3.15.x. É interessato la funzione ZipArchive::extractTo d...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#40</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-30-cve-2026-0321-palo-alto-networks-cloud-ngfw-pan-os.html" class="card-title">CVE-2026-0321 | Palo Alto Networks Cloud NGFW/PAN-OS/Prisma Access Dataplane Interface negazione del servizio</a>
+      <p class="card-desc">Un punto di criticita di livello critico è stato rilevato in Palo Alto Networks Cloud NGFW, PAN-OS and Prisma Access. Riguarda una funzione ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#41</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-31-cve-2026-55498-error311-filerise-fino-a-3-14-x-dir.html" class="card-title">CVE-2026-55498 | error311 FileRise fino a 3.14.x directory traversal</a>
+      <p class="card-desc">In error311 FileRise fino a 3.14.x è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciuta. La ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#42</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-32-cve-2026-62847-metalama-fino-a-2026-1-18-temporary.html" class="card-title">CVE-2026-62847 | Metalama fino a 2026.1.18 Temporary File Path.GetTempPath escalationi di privilegi</a>
+      <p class="card-desc">In Metalama fino a 2026.1.18 è stata rilevato un punto critico di livello critico. Si considera coinvolta una funzione sconosciuta nel compo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#43</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-33-cve-2026-55684-labredescefetrj-wegia-fino-a-3-8-5-.html" class="card-title">CVE-2026-55684 | LabRedesCefetRJ WeGIA fino a 3.8.5 cadastro_cobrancas_geracao.php extract iniezione SQL</a>
+      <p class="card-desc">Un punto critico di livello critico è stato rilevato in LabRedesCefetRJ WeGIA fino a 3.8.5. Risulta coinvolta una funzione sconosciuta del f...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#44</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-34-cve-2026-55682-labredescefetrj-wegia-fino-a-3-8-5-.html" class="card-title">CVE-2026-55682 | LabRedesCefetRJ WeGIA fino a 3.8.5 Session sessionStart.php PHPSESSID escalationi di privilegi</a>
+      <p class="card-desc">In LabRedesCefetRJ WeGIA fino a 3.8.5 stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato una funzion...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#45</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-35-cve-2026-55681-labredescefetrj-wegia-fino-a-3-8-5-.html" class="card-title">CVE-2026-55681 | LabRedesCefetRJ WeGIA fino a 3.8.5 Material/Patrimônio restaurar_produto_desocultar.php extract id_produto iniezione SQL</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello critico in LabRedesCefetRJ WeGIA fino a 3.8.5. É interessato la funzione extract del file web/...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#46</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-36-cve-2026-55679-labredescefetrj-wegia-fino-a-3-8-5-.html" class="card-title">CVE-2026-55679 | LabRedesCefetRJ WeGIA fino a 3.8.5 Installation installador.php shell_exec usuario escalationi di privilegi</a>
+      <p class="card-desc">Una vulnerabilità di livello critico è stata rilevata in LabRedesCefetRJ WeGIA fino a 3.8.5. Riguarda la funzione shell_exec del file web/in...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#47</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-37-threatsday-adobe-rce-dns-wallet-theft-nvidia-conta.html" class="card-title">ThreatsDay: Adobe RCE, DNS Wallet Theft, NVIDIA Container Escape, Self-Healing Backdoor + 23 More</a>
+      <p class="card-desc">Someone built a tool to steal data, then decided it should scare the victim for fun. Yes, that’s an actual feature. And somehow, it fits rig...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#48</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-38-citizen-lab-traces-zero-click-candiru-spyware-infe.html" class="card-title">Citizen Lab Traces Zero-Click Candiru Spyware Infections at Al Jazeera to Targeted Online Ads</a>
+      <p class="card-desc">Candiru, an Israeli maker of spyware sold to governments, infected devices at the news network Al Jazeera through ordinary online ads, in at...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#49</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-39-silent-lynx-exploits-winrar-flaw-to-deploy-reverse.html" class="card-title">Silent Lynx Exploits WinRAR Flaw to Deploy Reverse Shell in CIS Government Attacks</a>
+      <p class="card-desc">The threat actor known as Silent Lynx has been attributed to a fresh set of attacks targeting government organizations across the Commonweal...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#50</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-40-help-tds-linked-to-hotejka-as-20-000-cloudflare-pa.html" class="card-title">Help TDS Linked to Hotejka as 20,000+ Cloudflare Pages Domains Host Tech Support Scams</a>
+      <p class="card-desc">A long-running Traffic Distribution System (TDS) known as Help TDS to a Russian-language affiliate program called Hotejka, which appears to ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#51</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-41-nginx-fixes-5-flaws-including-possible-rce-and-a-t.html" class="card-title">NGINX Fixes 5 Flaws, Including Possible RCE and a TLS Bug That May Skip Client-Cert Checks</a>
+      <p class="card-desc">NGINX released&amp;nbsp;versions 1.30.6 and 1.31.7&amp;nbsp;on October 14 to fix five vulnerabilities, one of them present in every release since Ma...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#52</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-44-fake-ai-attacks-spread-across-us-companies-how-mss.html" class="card-title">Fake AI Attacks Spread Across US Companies: How MSSPs Can Stop Incidents Early</a>
+      <p class="card-desc">Attackers are impersonating popular AI products to distribute malware, steal browser sessions, and compromise business accounts. ANY.RUN lin...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#53</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-46-why-ai-confidence-is-not-validation.html" class="card-title">Why AI Confidence Is Not Validation</a>
+      <p class="card-desc">AI is already part of digital forensics and incident response work, with or without a policy in place to govern it. The issue is that these ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#54</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-47-india-mandates-registered-caller-name-display-on-4.html" class="card-title">India Mandates Registered Caller Name Display on 4G and Newer Networks From November 1</a>
+      <p class="card-desc">The Indian government has directed telecom service providers (TSPs) in the country to mandatorily display callers&#39; registered names along wi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#55</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-48-ghostaction-compromises-about-1-900-github-account.html" class="card-title">GhostAction Compromises About 1,900 GitHub Accounts, Targets Over 30,000 Repositories</a>
+      <p class="card-desc">The credential-theft campaign known as GhostAction has ramped up, targeting more than 30,000 repositories across 3,000 users and organizatio...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#56</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-50-ahsaycbs-flaws-exploited-to-deploy-web-shells-get-.html" class="card-title">AhsayCBS Flaws Exploited to Deploy Web Shells Get New Fixes After Incomplete Patches</a>
+      <p class="card-desc">Singapore-based Ahsay Backup has released security updates to address two security flaws in AhsayCBS that have been exploited by bad actors ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#57</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-51-android-gets-ai-defenses-against-messaging-scams-f.html" class="card-title">Android gets AI defenses against messaging scams, fake calls</a>
+      <p class="card-desc">Google announced new AI-powered defenses against scam messages and call-forwarding abuse on Android, currently rolling out to eligible devic...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#58</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-52-hackers-hijack-d-link-ubiquiti-devices-to-resell-y.html" class="card-title">Hackers hijack D-Link, Ubiquiti devices to resell your stolen bandwidth</a>
+      <p class="card-desc">A proxyjacking campaign has impacted devices in 34 countries, monetizing victims&#39; internet connections through a commercial residential prox...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#59</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-53-fake-arch-linux-packages-push-malware-with-root-pr.html" class="card-title">Fake Arch Linux packages push malware with root privileges</a>
+      <p class="card-desc">A threat actor uploaded malicious packages to the Arch User Repository (AUR) that impersonated two popular helper tools, yay and paru. [...]</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#60</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-54-is-ai-pentesting-as-good-as-a-human-pentester.html" class="card-title">Is AI pentesting as good as a human pentester?</a>
+      <p class="card-desc">AI pentesting can uncover vulnerabilities missed by human testers, but it also has limitations in consistency, risk assessment, and understa...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#61</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-55-microsoft-windows-server-2022-reached-end-of-mains.html" class="card-title">Microsoft: Windows Server 2022 reached end of mainstream support</a>
+      <p class="card-desc">Microsoft announced that Windows Server 2022 has reached the end of mainstream support and will remain in extended support until October 203...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#62</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-56-police-arrests-95-suspects-in-international-csam-c.html" class="card-title">Police arrests 95 suspects in international CSAM crackdown action</a>
+      <p class="card-desc">Law enforcement authorities from 17 countries in Latin America and Europe have arrested 95 suspects in an INTERPOL-coordinated operation tar...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#63</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-57-microsoft-fixes-bug-causing-windows-black-screens-.html" class="card-title">Microsoft fixes bug causing Windows black screens, Explorer crashes</a>
+      <p class="card-desc">Microsoft has resolved a known issue that was causing black screens, desktop loading issues, and Explorer crashes after installing Windows 1...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#64</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-58-uk-legal-aid-agency-hackers-stole-records-dating-b.html" class="card-title">UK Legal Aid Agency: Hackers stole records dating back to 1978</a>
+      <p class="card-desc">The Legal Aid Agency (LAA), an executive agency of the UK&#39;s Ministry of Justice that manages the country&#39;s Public Defender Service, says att...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#65</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-60-vulnerability-management-isn-t-about-the-score-it-.html" class="card-title">Vulnerability Management Isn&#39;t About the Score — It&#39;s About How It Applies to You</a>
+      <p class="card-desc">Organizations need to move away from vendor-assigned, theoretical scores toward real exploit data specific to their environments.</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#66</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-61-eu-grocers-pay-a-steep-price-for-unpatched-fridge-.html" class="card-title">EU Grocers Pay a Steep Price for Unpatched Fridge Firmware</a>
+      <p class="card-desc">Hundreds of stores lost millions of euros because they hired third parties to manage the outdated OT firmware running their cooling systems.</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#67</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-63-yam-store-the-phishing-network-behind-a-billion-me.html" class="card-title">Yam Store: The Phishing Network Behind a Billion Messages</a>
+      <p class="card-desc">A sprawling cybercrime marketplace supplied cloud infrastructure and phishing kits that helped fuel more than 1 billion phishing messages wo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#68</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-64-anthropic-sneakpeek-flaw-is-a-silent-zero-click-th.html" class="card-title">Anthropic &#39;SneakPeek&#39; Flaw Is a Silent Zero-Click Threat</a>
+      <p class="card-desc">A bug in Claude Code Desktop&#39;s preview pane can allow adversaries to quietly steal credentials from developers, including SSH private keys, ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#69</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-65-burger-king-japan-confirms-data-breach-exposing-11.html" class="card-title">Burger King Japan Confirms Data Breach Exposing 11.18M User Records</a>
+      <p class="card-desc">Burger King Japan has confirmed a data breach that exposed about 11.18 million records linked to members of its official app. BK Japan, whic...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#70</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-68-hackers-use-clickfix-and-python-tunnels-to-prepare.html" class="card-title">Hackers Use ClickFix and Python Tunnels to Prepare Systems for Ransomware Attacks</a>
+      <p class="card-desc">Hackers are using ClickFix tricks to install malware loaders and Python tunnels on Windows systems, creating access that could support ranso...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#71</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-69-chinese-phishing-network-linked-to-1-billion-messa.html" class="card-title">Chinese Phishing Network Linked to 1 Billion Messages Targeting 75,000 Organizations</a>
+      <p class="card-desc">A Chinese-run phishing network has been linked to one billion phishing emails targeting 75,000 organizations, according to a report publishe...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#72</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-70-just-viewing-an-online-ad-can-infect-your-device-w.html" class="card-title">Just Viewing an Online Ad Can Infect Your Device With Spyware, Researchers Reveal</a>
+      <p class="card-desc">Simply viewing an online advertisement can be enough to infect a device with powerful spyware, without the user clicking, downloading a file...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#73</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-71-ai-agents-create-an-unseen-credential-surface-that.html" class="card-title">AI Agents Create an Unseen Credential Surface That Exposes API Keys and Cloud Secrets</a>
+      <p class="card-desc">AI agents can expose API keys and cloud secrets during ordinary work, even when no malware is present. When an agent runs a command, reads a...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#74</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-72-uk-legal-aid-agency-data-breach-exposes-personal-r.html" class="card-title">UK Legal Aid Agency Data Breach Exposes Personal Records Dating Back to 1978</a>
+      <p class="card-desc">The UK Legal Aid Agency (LAA) has confirmed that its 2025 cyberattack stole personal records dating back to 1978. An updated investigation f...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#75</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-73-kgb-rat-malware-bypasses-windows-defender-to-steal.html" class="card-title">KGB RAT Malware Bypasses Windows Defender to Steal Credentials and Control PCs</a>
+      <p class="card-desc">A Windows remote access trojan called KGB RAT gives attackers a way to spy on infected computers, collect credentials and control a victim’s...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#76</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-75-context-is-king-in-the-fight-against-modern-cybera.html" class="card-title">Context Is King in the Fight Against Modern Cyberattacks</a>
+      <p class="card-desc">Contextual defense helps security teams connect the signals, anticipate what comes next, and stop threats before they escalate. The post Con...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#77</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-76-watch-now-zero-trust-strategies-summit-all-session.html" class="card-title">Watch Now: Zero Trust Strategies Summit – All Sessions Available on Demand</a>
+      <p class="card-desc">This summit is laser-focused on the next generation of Zero Trust and Identity security, moving beyond theory to deliver actionable strategi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#78</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-77-uk-legal-aid-agency-hack-scope-widens-after-forens.html" class="card-title">UK Legal Aid Agency Hack Scope Widens After Forensic Review</a>
+      <p class="card-desc">Most of the data is related to applications, claims, and payments submitted between 2007 and 2025. The post UK Legal Aid Agency Hack Scope W...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#79</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-78-supermarket-refrigeration-attack-widens-to-copelan.html" class="card-title">Supermarket Refrigeration Attack Widens to Copeland, Dixell Controllers</a>
+      <p class="card-desc">Roughly 700 French supermarkets were hit by the cyberattacks, for which no group has claimed responsibility. The post Supermarket Refrigerat...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#80</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-79-cikabika-bot-rat-uses-discord-for-c-c.html" class="card-title">CikaBika Bot RAT Uses Discord for C&amp;C</a>
+      <p class="card-desc">Delivered via phishing, the malware provides reconnaissance, remote execution, and data exfiltration capabilities. The post CikaBika Bot RAT...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#81</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-80-novel-android-rat-hirudo-replaces-banking-apps-wit.html" class="card-title">Novel Android RAT ‘Hirudo’ Replaces Banking Apps With Trojanized Copies</a>
+      <p class="card-desc">The Hirudo malware combines elements of a traditional banking trojan and a full-featured RAT. The post Novel Android RAT &amp;#8216;Hirudo&amp;#8217...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#82</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-81-centerpoint-energy-data-breach-impacts-1-million-t.html" class="card-title">CenterPoint Energy Data Breach Impacts 1 Million Texans</a>
+      <p class="card-desc">Personal information such as names, addresses, Social Security numbers, and driver’s license numbers was compromised. The post CenterPoint E...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#83</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-82-ciso-conversations-james-robinson-many-jobs-one-jo.html" class="card-title">CISO Conversations: James Robinson – Many Jobs, One Journey to Netskope CISO</a>
+      <p class="card-desc">James Robinson never planned a cybersecurity career — seven companies and one deputy CISO role later, he leads security at Netskope. The pos...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#84</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-84-cisco-warns-of-exploited-secure-email-gateway-vuln.html" class="card-title">Cisco Warns of Exploited Secure Email Gateway Vulnerability</a>
+      <p class="card-desc">Unauthenticated, remote attackers could write arbitrary files to the operating system and execute commands with root privileges. The post Ci...</p>
+    </div>
+</div>
+
+<div class="no-results" id="no-results">
+  <p>Nessun risultato trovato</p>
+</div>
+
+<footer class="footer">
+  <p>Cyber Security News Dashboard - Generato automaticamente senza amore o sentimento</p>
+  <p>Creato (con n8n e un pochino di javascript scritto da un LLM) da: <a href="https://www.linkedin.com/in/mocciaalessandro" target="_blank">Alessandro</a></p>
+</footer>
+
+<script>
+(function() {
+  const cards = document.querySelectorAll('.card');
+  const buttons = document.querySelectorAll('[data-filter]');
+  const searchInput = document.getElementById('search');
+  const noResults = document.getElementById('no-results');
+  
+  let currentFilter = 'all';
+  let searchTerm = '';
+
+  const filterCards = () => {
+    let visibleCount = 0;
+    
+    cards.forEach(card => {
+      const matchesFilter = currentFilter === 'all' || card.dataset.severity === currentFilter;
+      const matchesSearch = !searchTerm || card.textContent.toLowerCase().includes(searchTerm);
+      const isVisible = matchesFilter && matchesSearch;
+      
+      card.style.display = isVisible ? 'block' : 'none';
+      if (isVisible) visibleCount++;
+    });
+    
+    noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+  };
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      filterCards();
+    });
+  });
+
+  let debounceTimer;
+  searchInput.addEventListener('input', (e) => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      searchTerm = e.target.value.toLowerCase();
+      filterCards();
+    }, 150);
+  });
+})();
+</script>
+
+</body>
+</html>
