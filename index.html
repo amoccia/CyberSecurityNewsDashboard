@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyber Security News Dashboard</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --primary: #00ff9f;
+      --primary-dim: #00cc7a;
+      --card-bg: #111;
+      --border: rgba(0, 255, 159, 0.2);
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--primary);
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.5;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      font-size: clamp(1.2rem, 4vw, 2rem);
+      text-shadow: 0 0 20px var(--primary);
+      margin: 0 0 10px 0;
+    }
+    .header time {
+      font-size: 0.85rem;
+      opacity: 0.7;
+    }
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 25px;
+    }
+    .stat {
+      padding: 8px 15px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      background: var(--card-bg);
+    }
+    .stat.critical { border-color: #ff4444; }
+    .stat.high { border-color: #ff8c00; }
+    .stat.medium { border-color: #ffd700; }
+    .stat.low { border-color: var(--primary-dim); }
+    .controls {
+      max-width: 900px;
+      margin: 0 auto 25px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .search-wrapper {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+    .search-wrapper::before {
+      content: '🔍';
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+    }
+    input {
+      width: 100%;
+      padding: 10px 10px 10px 35px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--primary);
+      font-family: inherit;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .filter-buttons {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 10px 15px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--primary);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    button:hover, button.active {
+      background: var(--primary);
+      color: var(--bg);
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      display: grid;
+      gap: 15px;
+    }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 15px;
+      background: var(--card-bg);
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .index {
+      font-size: 12px;
+      opacity: 0.6;
+    }
+    .badge {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    .critical { background: #ff4444; color: #fff; }
+    .high { background: #ff8c00; color: #000; }
+    .medium { background: #ffd700; color: #000; }
+    .low { background: var(--primary-dim); color: #000; }
+    .card-title {
+      display: block;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: bold;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .card-title:hover { text-decoration: underline; }
+    .card-desc {
+      font-size: 12px;
+      color: var(--primary-dim);
+      margin: 0;
+    }
+    .no-results {
+      text-align: center;
+      padding: 40px;
+      opacity: 0.6;
+      display: none;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      opacity: 0.6;
+      text-align: center;
+    }
+    @media (max-width: 600px) {
+      .controls { flex-direction: column; }
+      .filter-buttons { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🛡️ CYBER SECURITY NEWS DASHBOARD</h1>
+  <time datetime="2026-10-27T18:04:04.301Z">27/10/2026, 18:04</time>
+</div>
+
+<div class="stats">
+  <div class="stat">📊 Totale: <strong>144</strong></div>
+  <div class="stat critical">🔴 Critical: <strong>9</strong></div>
+  <div class="stat high">🟠 High: <strong>0</strong></div>
+  <div class="stat medium">🟡 Medium: <strong>8</strong></div>
+  <div class="stat low">🟢 Low: <strong>127</strong></div>
+</div>
+
+<div class="controls">
+  <div class="search-wrapper">
+    <input type="search" id="search" placeholder="Cerca nelle notizie..." aria-label="Cerca">
+  </div>
+  <div class="filter-buttons">
+    <button class="active" data-filter="all">Tutte</button>
+    <button data-filter="critical">Critical</button>
+    <button data-filter="high">High</button>
+    <button data-filter="medium">Medium</button>
+    <button data-filter="low">Low</button>
+  </div>
+</div>
+
+<div class="container" id="cards">
+  
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#01</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-101-apple-backports-fix-for-exploited-coregraphics-fla.html" class="card-title">Apple Backports Fix for Exploited CoreGraphics Flaw to Older iPhones and iPads</a>
+      <p class="card-desc">Apple on Monday backported fixes for a high-severity security flaw that was exploited in real-world cyber attacks to older devices. The vuln...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#02</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-109-cisa-confirms-active-exploitation-of-two-php2shell.html" class="card-title">CISA Confirms Active Exploitation of Two PHP2Shell Flaws Enabling Remote Code Execution</a>
+      <p class="card-desc">The U.S. Cybersecurity and Infrastructure Security Agency (CISA) on Monday confirmed active exploitation of the recently patched PHP2Shell f...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#03</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-114-apple-backports-coregraphics-zero-day-patches-to-o.html" class="card-title">Apple backports CoreGraphics zero-day patches to older iPhones</a>
+      <p class="card-desc">​Apple has backported security patches released last month to older iPhones and iPads, addressing a zero-day bug exploited in &quot;extremely sop...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#04</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-116-cisa-confirms-php2shell-vulnerabilities-now-exploi.html" class="card-title">CISA confirms PHP2Shell vulnerabilities now exploited in attacks</a>
+      <p class="card-desc">The U.S. Cybersecurity and Infrastructure Security Agency (CISA) has added the PHP2Shell vulnerabilities to its catalog of actively exploite...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#05</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-127-critical-goahead-tls-flaws-could-expose-hundreds-o.html" class="card-title">Critical GoAhead TLS Flaws Could Expose Hundreds of Millions of Devices to Attacks</a>
+      <p class="card-desc">Three new security flaws affect GoAhead, a small web server that device makers build into routers, printers, gateways, and industrial contro...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#06</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-133-critical-hashicorp-consul-kubernetes-flaw-allows-a.html" class="card-title">Critical HashiCorp Consul Kubernetes Flaw Allows Attackers to Gain Elevated Privileges</a>
+      <p class="card-desc">HashiCorp has released fixes for a Consul-k8s authorization bypass that could allow an attacker to gain elevated Consul privileges from anot...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#07</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-134-apple-ios-27-2-released-with-fixes-for-163-vulnera.html" class="card-title">Apple iOS 27.2 Released With Fixes for 163 Vulnerabilities, Including Fix for Critical WebKit RCE</a>
+      <p class="card-desc">Apple released iOS 27.2 and iPadOS 27.2 on October 26, 2026, with fixes for 163 security flaws. The update covers iPhone 11 and later and a ...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#08</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-137-hpe-patches-dozens-of-critical-flaws-in-networking.html" class="card-title">HPE Patches Dozens of Critical Flaws in Networking Products</a>
+      <p class="card-desc">Eight max-severity security defects could lead to remote code execution and authentication bypass. The post HPE Patches Dozens of Critical F...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#09</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-139-ios-macos-27-2-patch-286-bugs-fix-for-exploited-fl.html" class="card-title">iOS, macOS 27.2 Patch 286 Bugs; Fix for Exploited Flaw Backported to iOS 18</a>
+      <p class="card-desc">Apple patched 286 vulnerabilities in iOS and macOS 27.2 and brought the fix for an exploited CoreGraphics zero-day to older iPhones. The pos...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#10</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-2-cve-2026-116839-ubiquiti-airmax-m-fino-a-6-3-25-cr.html" class="card-title">CVE-2026-116839 | Ubiquiti airMAX M fino a 6.3.25 cross site request forgery</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Ubiquiti airMAX M fino a 6.3.25. Riguarda una funzione sconosciuta. L’alte...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#11</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-4-cve-2026-116838-ubiquiti-airmax-m-fino-a-6-3-25-cr.html" class="card-title">CVE-2026-116838 | Ubiquiti airMAX M fino a 6.3.25 cross site request forgery</a>
+      <p class="card-desc">In Ubiquiti airMAX M fino a 6.3.25 è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzione sconosciut...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#12</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-6-cve-2026-116836-ubiquiti-airmax-m-fino-a-6-3-25-cr.html" class="card-title">CVE-2026-116836 | Ubiquiti airMAX M fino a 6.3.25 cross site scripting</a>
+      <p class="card-desc">In Ubiquiti airMAX M fino a 6.3.25 stata rilevata una vulnerabilità di livello problematico. Da questa vulnerabilità è interessato una funzi...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#13</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-17-cve-2026-116803-cure53-dompurify-fino-a-3-4-16-san.html" class="card-title">CVE-2026-116803 | cure53 DOMPurify fino a 3.4.16 sanitize cross site scripting</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in cure53 DOMPurify fino a 3.4.16. Risulta coinvolta una funzione sconosciuta. La ...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#14</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-20-cve-2026-116823-yeswiki-fino-a-4-6-x-bazar-bazarfi.html" class="card-title">CVE-2026-116823 | YesWiki fino a 4.6.x Bazar BazarField::getValue REQUEST cross site scripting (EUVD-2026-110530)</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in YesWiki fino a 4.6.x. Riguarda la funzione BazarField::getValue del componente...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#15</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-21-cve-2026-116802-cure53-dompurify-fino-a-3-4-16-smi.html" class="card-title">CVE-2026-116802 | Cure53 DOMPurify fino a 3.4.16 SMIL Guard transformCaseFunc cross site scripting</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Cure53 DOMPurify fino a 3.4.16. Viene interessata una funzione sconosciu...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#16</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-22-cve-2026-116804-cure53-dompurify-fino-a-3-4-16-cro.html" class="card-title">CVE-2026-116804 | cure53 DOMPurify fino a 3.4.16 cross site scripting</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in cure53 DOMPurify fino a 3.4.16. Si considera coinvolta una funzione sco...</p>
+    </div>
+    <div class="card" data-severity="medium">
+      <div class="card-top">
+        <span class="index">#17</span>
+        <span class="badge medium">medium</span>
+      </div>
+      <a href="news-43-cve-2026-116824-yeswiki-fino-a-4-6-x-referer-refer.html" class="card-title">CVE-2026-116824 | YesWiki fino a 4.6.x Referer referrers_sites.php cross site scripting (EUVD-2026-110531)</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in YesWiki fino a 4.6.x. É interessato una funzione sconosciuta del file handlers...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#18</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-1-cve-2026-88781-asus-firmware-i-o-command-negazione.html" class="card-title">CVE-2026-88781 | ASUS Firmware I/O Command negazione del servizio (EUVD-2026-110597)</a>
+      <p class="card-desc">Un punto di debole di livello estremamente critico è stato rilevato in ASUS Firmware. É interessato una funzione sconosciuta del componente ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#19</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-3-cve-2026-116840-ggml-org-llama-cpp-fino-a-0-5-x-gg.html" class="card-title">CVE-2026-116840 | ggml-org llama.cpp fino a 0.5.x GGUF Initialization gguf_init_from_reader buffer overflow</a>
+      <p class="card-desc">In ggml-org llama.cpp fino a 0.5.x è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciuta appa...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#20</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-5-cve-2026-116844-fclairamb-ftpserverlib-fino-a-0-32.html" class="card-title">CVE-2026-116844 | Fclairamb Ftpserverlib fino a 0.32.4 Data Connection TransferOpen cifratura debole</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in Fclairamb Ftpserverlib fino a 0.32.4. Risulta coinvolta una funzione sconosciut...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#21</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-7-cve-2026-116837-ubiquiti-airmax-m-ltu-ptp-ltu-ptmp.html" class="card-title">CVE-2026-116837 | Ubiquiti airMAX M/LTU PTP/LTU PTMP/SolarPoint/SolarSwitch buffer overflow</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello estremamente critico in Ubiquiti airMAX M, LTU PTP, LTU PTMP, SolarPoint and SolarSwitch. É in...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#22</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-8-cve-2026-116829-ggml-org-llama-cpp-fino-a-0-5-x-gg.html" class="card-title">CVE-2026-116829 | ggml-org llama.cpp fino a 0.5.x GGUF File gguf_init_from_reader buffer overflow (b11301)</a>
+      <p class="card-desc">Una vulnerabilità di livello problematico è stata rilevata in ggml-org llama.cpp fino a 0.5.x. Riguarda la funzione gguf_init_from_reader de...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#23</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-9-cve-2026-116816-ggml-org-llama-cpp-llm-tokenizer-p.html" class="card-title">CVE-2026-116816 | ggml-org llama.cpp llm_tokenizer_plamo2 build buffer overflow (b10261)</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come critico in ggml-org llama.cpp. Viene interessata una funzione sconosciuta appartenente a...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#24</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-10-cve-2024-58399-ggml-org-llama-cpp-gguf-tensor-offs.html" class="card-title">CVE-2024-58399 | ggml-org llama.cpp GGUF Tensor Offset llama_model_loader tensor offsets rivelazione di informazioni (b2731)</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in ggml-org llama.cpp. Si considera coinvolta una funzione sconosciuta nel...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#25</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-11-cve-2025-71439-ggml-org-llama-cpp-vocabulary-imple.html" class="card-title">CVE-2025-71439 | ggml-org llama.cpp Vocabulary Implementation print_info buffer overflow (b5649)</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in ggml-org llama.cpp. Risulta coinvolta una funzione sconosciuta del comp...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#26</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-12-cve-2024-58400-ggml-org-llama-cpp-decoding-logic-l.html" class="card-title">CVE-2024-58400 | ggml-org llama.cpp Decoding Logic llama_decode_internal/llama_encode_internal rivelazione di informazioni (b3701)</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in ggml-org llama.cpp. Da questa vulnerabilità è interessato la funzione lla...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#27</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-13-cve-2026-116843-mistral-ai-mistral-vibe-fino-a-3-0.html" class="card-title">CVE-2026-116843 | Mistral AI Mistral Vibe fino a 3.0.2 Worktree .git/config add escalationi di privilegi</a>
+      <p class="card-desc">Un punto di debole di livello critico è stato rilevato in Mistral AI Mistral Vibe fino a 3.0.2. É interessato la funzione Aggiungi del file ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#28</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-14-cve-2026-116842-diasurgical-devilutionx-fino-a-1-5.html" class="card-title">CVE-2026-116842 | diasurgical DevilutionX fino a 1.5.5 libmpq libmpq__archive_dup buffer overflow</a>
+      <p class="card-desc">Un punto di criticita di livello critico è stato rilevato in diasurgical DevilutionX fino a 1.5.5. Riguarda la funzione libmpq__archive_dup ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#29</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-15-cve-2026-116841-diasurgical-devilutionx-fino-a-1-5.html" class="card-title">CVE-2026-116841 | diasurgical DevilutionX fino a 1.5.5 libmpq libmpq__file_number_from_hash block_table_index rivelazione di informazioni</a>
+      <p class="card-desc">In diasurgical DevilutionX fino a 1.5.5 è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciuta...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#30</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-16-cve-2026-111422-apache-airflow-ssh-provider-fino-a.html" class="card-title">CVE-2026-111422 | Apache Airflow SSH Provider fino a 7.0.0 SSHRemoteJobOperator environment escalationi di privilegi</a>
+      <p class="card-desc">In Apache Airflow SSH Provider fino a 7.0.0 è stata rilevato un punto critico di livello critico. Si considera coinvolta una funzione sconos...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#31</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-18-cve-2026-116826-yeswiki-fino-a-4-6-x-duplicationma.html" class="card-title">CVE-2026-116826 | YesWiki fino a 4.6.x DuplicationManager /api/pages downloadFile files escalationi di privilegi (EUVD-2026-110533)</a>
+      <p class="card-desc">In YesWiki fino a 4.6.x stata rilevata una vulnerabilità di livello problematico. Da questa vulnerabilità è interessato la funzione Duplicat...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#32</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-19-cve-2026-116827-yeswiki-fino-a-4-6-x-bazar-copyurl.html" class="card-title">CVE-2026-116827 | YesWiki fino a 4.6.x Bazar copyUrlToLocalFile escalationi di privilegi (EUVD-2026-110534)</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in YesWiki fino a 4.6.x. É interessato la funzione copyUrlToLocalFile del compone...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#33</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-23-cve-2026-116811-openpanel-dev-openpanel-fino-a-2-x.html" class="card-title">CVE-2026-116811 | Openpanel-dev OpenPanel fino a 2.x js-runtime validator escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come estremamente critico in Openpanel-dev OpenPanel fino a 2.x. Risulta coinvolta una funzi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#34</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-24-cve-2026-116825-yeswiki-fino-a-4-6-2-httpsignature.html" class="card-title">CVE-2026-116825 | YesWiki fino a 4.6.2 HttpSignatureService verifySignature autenticazione debole (EUVD-2026-110532)</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in YesWiki fino a 4.6.2. Da questa vulnerabilità è interessato la funzione H...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#35</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-25-cve-2026-116813-openpanel-dev-openpanel-fino-a-2-x.html" class="card-title">CVE-2026-116813 | Openpanel-dev OpenPanel fino a 2.x Conversion Service ConversionService.getConversion event_names/startDate/endDate iniezione SQL</a>
+      <p class="card-desc">Un punto di debole di livello critico è stato rilevato in Openpanel-dev OpenPanel fino a 2.x. É interessato la funzione ConversionService.ge...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#36</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-26-cve-2026-116814-openpanel-dev-openpanel-2-3-0-logg.html" class="card-title">CVE-2026-116814 | Openpanel-dev OpenPanel 2.3.0 Logging SMTP_HOST/RESEND_API_KEY rivelazione di informazioni</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Openpanel-dev OpenPanel 2.3.0. Riguarda una funzione sconosciuta del compo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#37</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-27-cve-2026-116817-openpanel-dev-openpanel-fino-a-2-x.html" class="card-title">CVE-2026-116817 | Openpanel-dev OpenPanel fino a 2.x Bull Board Dashboard /api/queues autenticazione debole</a>
+      <p class="card-desc">In Openpanel-dev OpenPanel fino a 2.x è stato trovato un punto critico di livello estremamente critico. Viene interessata una funzione scono...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#38</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-28-cve-2026-116810-openpanel-dev-openpanel-fino-a-2-x.html" class="card-title">CVE-2026-116810 | Openpanel-dev OpenPanel fino a 2.x escalationi di privilegi</a>
+      <p class="card-desc">In Openpanel-dev OpenPanel fino a 2.x è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzione sconosc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#39</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-29-cve-2026-116809-openpanel-dev-openpanel-fino-a-2-x.html" class="card-title">CVE-2026-116809 | Openpanel-dev OpenPanel fino a 2.x tRPC Procedure event.bots projectId escalationi di privilegi</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in Openpanel-dev OpenPanel fino a 2.x. Risulta coinvolta una funzione sconosciuta ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#40</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-30-cve-2026-116806-openpanel-dev-openpanel-fino-a-2-x.html" class="card-title">CVE-2026-116806 | Openpanel-dev OpenPanel fino a 2.x Onboarding onboarding.project tRPC mutation escalationi di privilegi</a>
+      <p class="card-desc">In Openpanel-dev OpenPanel fino a 2.x stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato la funzione...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#41</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-31-cve-2026-116807-openpanel-dev-openpanel-fino-a-2-x.html" class="card-title">CVE-2026-116807 | Openpanel-dev OpenPanel fino a 2.x iniezione SQL</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello critico in Openpanel-dev OpenPanel fino a 2.x. É interessato una funzione sconosciuta. Attrave...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#42</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-32-cve-2026-116808-openpanel-dev-openpanel-fino-a-2-x.html" class="card-title">CVE-2026-116808 | Openpanel-dev OpenPanel fino a 2.x Profile Values property iniezione SQL</a>
+      <p class="card-desc">Una vulnerabilità di livello critico è stata rilevata in Openpanel-dev OpenPanel fino a 2.x. Riguarda una funzione sconosciuta del component...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#43</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-33-cve-2026-116822-yeswiki-fino-a-4-6-x-bazarlisteact.html" class="card-title">CVE-2026-116822 | YesWiki fino a 4.6.x BazarListeAction template directory traversal (EUVD-2026-110529)</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in YesWiki fino a 4.6.x. Viene interessata una funzione sconosciuta. La ges...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#44</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-34-cve-2026-116820-yeswiki-fino-a-4-6-x-bazar-showreq.html" class="card-title">CVE-2026-116820 | YesWiki fino a 4.6.x Bazar showreq rivelazione di informazioni</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in YesWiki fino a 4.6.x. Si considera coinvolta una funzione sconosciuta n...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#45</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-35-cve-2026-116819-openpanel-dev-openpanel-fino-a-2-x.html" class="card-title">CVE-2026-116819 | Openpanel-dev OpenPanel fino a 2.x Notification Rules rivelazione di informazioni</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Openpanel-dev OpenPanel fino a 2.x. Risulta coinvolta una funzione scon...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#46</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-36-cve-2026-116821-yeswiki-fino-a-4-6-x-aclservice-up.html" class="card-title">CVE-2026-116821 | YesWiki fino a 4.6.x AclService updateRequestWithACL escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in YesWiki fino a 4.6.x. Da questa vulnerabilità è interessato la funzi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#47</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-37-cve-2026-116815-openpanel-dev-openpanel-fino-a-2-x.html" class="card-title">CVE-2026-116815 | Openpanel-dev OpenPanel fino a 2.x Sankey sankey.service.ts chart.sankey name iniezione SQL</a>
+      <p class="card-desc">Un punto di debole di livello critico è stato rilevato in Openpanel-dev OpenPanel fino a 2.x. É interessato la funzione chart.sankey del fil...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#48</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-38-cve-2026-116805-openpanel-dev-openpanel-fino-a-2-x.html" class="card-title">CVE-2026-116805 | Openpanel-dev OpenPanel fino a 2.x Client List client.list project ID rivelazione di informazioni</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Openpanel-dev OpenPanel fino a 2.x. Riguarda la funzione client.list del c...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#49</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-39-cve-2026-116812-openpanel-dev-openpanel-fino-a-2-x.html" class="card-title">CVE-2026-116812 | Openpanel-dev OpenPanel fino a 2.x Cohort Service cohort.service.ts profileColumnAccess name iniezione SQL</a>
+      <p class="card-desc">In Openpanel-dev OpenPanel fino a 2.x è stato trovato un punto critico di livello critico. Viene interessata una funzione sconosciuta appart...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#50</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-40-cve-2026-116801-parse-community-parse-server-fino-.html" class="card-title">CVE-2026-116801 | parse-community parse-server fino a 8.6.104/9.10.5-alpha.5 relatedTo escalationi di privilegi</a>
+      <p class="card-desc">In parse-community parse-server fino a 8.6.104/9.10.5-alpha.5 è stata rilevato un punto critico di livello problematico. Si considera coinvo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#51</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-41-cve-2026-116828-yeswiki-fino-a-4-6-x-despam-php-fr.html" class="card-title">CVE-2026-116828 | YesWiki fino a 4.6.x despam.php from iniezione SQL (EUVD-2026-110535)</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in YesWiki fino a 4.6.x. Risulta coinvolta una funzione sconosciuta del file despa...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#52</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-42-cve-2026-116800-wwbn-avideo-fino-a-29-4-x-language.html" class="card-title">CVE-2026-116800 | WWBN AVideo fino a 29.4.x Language setLanguage Accept-Language escalationi di privilegi</a>
+      <p class="card-desc">In WWBN AVideo fino a 29.4.x stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato la funzione setLangu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#53</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-44-cve-2026-116818-openpanel-dev-openpanel-fino-a-2-x.html" class="card-title">CVE-2026-116818 | Openpanel-dev OpenPanel fino a 2.x projectId iniezione SQL</a>
+      <p class="card-desc">Una vulnerabilità di livello critico è stata rilevata in Openpanel-dev OpenPanel fino a 2.x. Riguarda una funzione sconosciuta. Attraverso l...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#54</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-45-cve-2026-76654-kubernetes-fino-a-1-34-11-1-35-8-1-.html" class="card-title">CVE-2026-76654 | Kubernetes fino a 1.34.11/1.35.8/1.36.4/1.37.0 kubelet subPath escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Kubernetes fino a 1.34.11/1.35.8/1.36.4/1.37.0. Viene interessata una fu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#55</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-46-cve-2026-2270-kubernetes-fino-a-1-34-11-1-35-8-1-3.html" class="card-title">CVE-2026-2270 | Kubernetes fino a 1.34.11/1.35.8/1.36.4/1.37.0 StatefulSet Controller escalationi di privilegi</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come estremamente critico in Kubernetes fino a 1.34.11/1.35.8/1.36.4/1.37.0. Si considera co...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#56</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-47-cve-2026-84633-apple-macos-fino-a-26-directory-tra.html" class="card-title">CVE-2026-84633 | Apple macOS fino a 26 directory traversal</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come estremamente critico in Apple macOS fino a 26. Risulta coinvolta una funzione sconosciu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#57</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-48-cve-2026-86989-apple-ios-ipados-fino-a-26-7-1-27-1.html" class="card-title">CVE-2026-86989 | Apple iOS/iPadOS fino a 26.7.1/27.1 escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come problematico in Apple iOS and iPadOS fino a 26.7.1/27.1. Da questa vulnerabilità è i...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#58</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-49-cve-2026-84594-apple-ios-ipados-fino-a-26-26-7-1-2.html" class="card-title">CVE-2026-84594 | Apple iOS/iPadOS fino a 26/26.7.1/27 rivelazione di informazioni</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Apple iOS and iPadOS fino a 26/26.7.1/27. Riguarda una funzione sconosciut...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#59</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-50-cve-2026-86984-apple-macos-fino-a-15-8-1-26-7-1-27.html" class="card-title">CVE-2026-86984 | Apple macOS fino a 15.8.1/26.7.1/27.1 escalationi di privilegi</a>
+      <p class="card-desc">In Apple macOS fino a 15.8.1/26.7.1/27.1 è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosciut...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#60</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-51-cve-2026-86992-apple-ios-ipados-macos-tvos-visiono.html" class="card-title">CVE-2026-86992 | Apple iOS/iPadOS/macOS/tvOS/visionOS/watchOS prima 26.7.2/27.2/15.8.2 buffer overflow</a>
+      <p class="card-desc">In Apple iOS, iPadOS, macOS, tvOS, visionOS and watchOS è stata rilevato un punto critico di livello critico. Si considera coinvolta una fun...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#61</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-52-cve-2026-86971-apple-ios-ipados-macos-visionos-pri.html" class="card-title">CVE-2026-86971 | Apple iOS/iPadOS/macOS/visionOS prima 26.7.2/27.2/15.8.2 buffer overflow</a>
+      <p class="card-desc">Un punto critico di livello critico è stato rilevato in Apple iOS, iPadOS, macOS and visionOS. Risulta coinvolta una funzione sconosciuta. P...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#62</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-53-cve-2026-113947-apple-macos-fino-a-27-1-escalation.html" class="card-title">CVE-2026-113947 | Apple macOS fino a 27.1 escalationi di privilegi</a>
+      <p class="card-desc">In Apple macOS fino a 27.1 stata rilevata una vulnerabilità di livello critico. Da questa vulnerabilità è interessato una funzione sconosciu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#63</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-54-cve-2026-86931-apple-macos-fino-a-15-8-1-26-26-7-1.html" class="card-title">CVE-2026-86931 | Apple macOS fino a 15.8.1/26/26.7.1 rivelazione di informazioni</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in Apple macOS fino a 15.8.1/26/26.7.1. É interessato una funzione sconosciuta. A...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#64</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-55-cve-2026-65368-apple-macos-fino-a-15-8-1-26-26-7-1.html" class="card-title">CVE-2026-65368 | Apple macOS fino a 15.8.1/26/26.7.1 Gatekeeper escalationi di privilegi</a>
+      <p class="card-desc">Una vulnerabilità di livello estremamente critico è stata rilevata in Apple macOS fino a 15.8.1/26/26.7.1. Riguarda una funzione sconosciuta...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#65</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-56-cve-2026-86880-apple-ios-ipados-fino-a-26-26-7-1-e.html" class="card-title">CVE-2026-86880 | Apple iOS/iPadOS fino a 26/26.7.1 escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Apple iOS and iPadOS fino a 26/26.7.1. Viene interessata una funzione sc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#66</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-57-cve-2026-86966-apple-ios-ipados-macos-visionos-pri.html" class="card-title">CVE-2026-86966 | Apple iOS/iPadOS/macOS/visionOS prima 26.7.2/27/15.8.2 Symlinks directory traversal</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come estremamente critico in Apple iOS, iPadOS, macOS and visionOS. Si considera coinvolta u...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#67</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-58-cve-2026-84605-apple-ios-ipados-fino-a-26-7-1-27-1.html" class="card-title">CVE-2026-84605 | Apple iOS/iPadOS fino a 26.7.1/27.1 escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come problematico in Apple iOS and iPadOS fino a 26.7.1/27.1. Risulta coinvolta una funzione...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#68</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-59-cve-2026-84595-apple-ios-ipados-macos-visionos-pri.html" class="card-title">CVE-2026-84595 | Apple iOS/iPadOS/macOS/visionOS prima 27/27/27/15.8.2/26.7.2 buffer overflow</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come estremamente critico in Apple iOS, iPadOS, macOS and visionOS. Da questa vulnerabili...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#69</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-60-cve-2026-116726-gbsplay-fino-a-0-0-103-gbs-c-gbr-o.html" class="card-title">CVE-2026-116726 | Gbsplay fino a 0.0.103 gbs.c gbr_open rivelazione di informazioni</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in Gbsplay fino a 0.0.103. É interessato la funzione gbr_open del file gbs.c. Pe...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#70</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-61-cve-2026-86946-apple-macos-fino-a-15-8-1-26-7-1-27.html" class="card-title">CVE-2026-86946 | Apple macOS fino a 15.8.1/26.7.1/27.1 Kernel buffer overflow</a>
+      <p class="card-desc">Un punto di criticita di livello estremamente critico è stato rilevato in Apple macOS fino a 15.8.1/26.7.1/27.1. Riguarda una funzione scono...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#71</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-62-cve-2026-86896-apple-macos-fino-a-15-8-1-26-7-1-27.html" class="card-title">CVE-2026-86896 | Apple macOS fino a 15.8.1/26.7.1/27.1 escalationi di privilegi</a>
+      <p class="card-desc">In Apple macOS fino a 15.8.1/26.7.1/27.1 è stato trovato un punto critico di livello critico. Viene interessata una funzione sconosciuta. At...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#72</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-63-cve-2026-86916-apple-ios-ipados-macos-prima-macos-.html" class="card-title">CVE-2026-86916 | Apple iOS/iPadOS/macOS prima macOS Tahoe 26.7.2 Memory Management buffer overflow</a>
+      <p class="card-desc">In Apple iOS, iPadOS and macOS è stata rilevato un punto critico di livello estremamente critico. Si considera coinvolta una funzione sconos...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#73</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-64-cve-2026-84599-apple-ios-ipados-macos-tvos-visiono.html" class="card-title">CVE-2026-84599 | Apple iOS/iPadOS/macOS/tvOS/visionOS/watchOS prima 26.7.2/27/15.8 Kernel buffer overflow</a>
+      <p class="card-desc">Un punto critico di livello estremamente critico è stato rilevato in Apple iOS, iPadOS, macOS, tvOS, visionOS and watchOS. Risulta coinvolta...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#74</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-65-cve-2026-86986-apple-ios-ipados-macos-safari-visio.html" class="card-title">CVE-2026-86986 | Apple iOS/iPadOS/macOS/Safari/visionOS prima 26.7.2/27.2 buffer overflow</a>
+      <p class="card-desc">In Apple iOS, iPadOS, macOS, Safari and visionOS stata rilevata una vulnerabilità di livello problematico. Da questa vulnerabilità è interes...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#75</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-66-cve-2026-65373-apple-macos-fino-a-15-8-1-26-26-7-1.html" class="card-title">CVE-2026-65373 | Apple macOS fino a 15.8.1/26/26.7.1 escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello estremamente critico in Apple macOS fino a 15.8.1/26/26.7.1. É interessato una funzione sconos...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#76</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-67-cve-2026-86985-apple-safari-ios-ipados-macos-tvos-.html" class="card-title">CVE-2026-86985 | Apple Safari/iOS/iPadOS/macOS/tvOS prima 27.2 escalationi di privilegi</a>
+      <p class="card-desc">Una vulnerabilità di livello critico è stata rilevata in Apple Safari, iOS, iPadOS, macOS and tvOS. Riguarda una funzione sconosciuta. Attra...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#77</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-68-cve-2026-86988-apple-ipados-ios-macos-tvos-visiono.html" class="card-title">CVE-2026-86988 | Apple iPadOS/iOS/macOS/tvOS/visionOS/watchOS fino a 27.1 rivelazione di informazioni</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Apple iPadOS, iOS, macOS, tvOS, visionOS and watchOS fino a 27.1. Viene ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#78</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-69-cve-2026-84604-apple-macos-fino-a-15-8-1-26-26-7-1.html" class="card-title">CVE-2026-84604 | Apple macOS fino a 15.8.1/26/26.7.1 buffer overflow</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come estremamente critico in Apple macOS fino a 15.8.1/26/26.7.1. Si considera coinvolta una...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#79</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-70-cve-2026-86970-apple-ios-ipados-macos-tvos-visiono.html" class="card-title">CVE-2026-86970 | Apple iOS/iPadOS/macOS/tvOS/visionOS/watchOS prima 26.7.2/27.2/15.8.2 Font Processing rivelazione di informazioni</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in Apple iOS, iPadOS, macOS, tvOS, visionOS and watchOS. Risulta coinvolta una ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#80</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-71-cve-2026-64759-apple-ios-ipados-macos-buffer-overf.html" class="card-title">CVE-2026-64759 | Apple iOS/iPadOS/macOS buffer overflow</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come estremamente critico in Apple iOS, iPadOS and macOS. Da questa vulnerabilità è inter...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#81</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-72-cve-2026-116723-fltk-fino-a-1-4-5-bmp-image-fl-bmp.html" class="card-title">CVE-2026-116723 | Fltk fino a 1.4.5 BMP Image Fl_BMP_Image::load_bmp_ buffer overflow</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in Fltk fino a 1.4.5. É interessato la funzione Fl_BMP_Image::load_bmp_ del comp...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#82</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-73-cve-2026-113937-apple-macos-fino-a-27-1-rivelazion.html" class="card-title">CVE-2026-113937 | Apple macOS fino a 27.1 rivelazione di informazioni</a>
+      <p class="card-desc">Un punto di criticita di livello problematico è stato rilevato in Apple macOS fino a 27.1. Riguarda una funzione sconosciuta. L’alterazione ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#83</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-74-cve-2026-112681-apple-ios-ipados-fino-a-26-7-1-27-.html" class="card-title">CVE-2026-112681 | Apple iOS/iPadOS fino a 26.7.1/27.1 rivelazione di informazioni</a>
+      <p class="card-desc">In Apple iOS and iPadOS fino a 26.7.1/27.1 è stato trovato un punto critico di livello problematico. Viene interessata una funzione sconosci...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#84</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-75-cve-2026-112618-apple-ios-ipados-visionos-fino-a-2.html" class="card-title">CVE-2026-112618 | Apple iOS/iPadOS/visionOS fino a 27.1 escalationi di privilegi</a>
+      <p class="card-desc">In Apple iOS, iPadOS and visionOS fino a 27.1 è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzione...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#85</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-76-cve-2026-112551-apple-macos-fino-a-26-7-1-27-1-esc.html" class="card-title">CVE-2026-112551 | Apple macOS fino a 26.7.1/27.1 escalationi di privilegi</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in Apple macOS fino a 26.7.1/27.1. Risulta coinvolta una funzione sconosciuta. Per...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#86</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-77-cve-2026-112547-apple-ios-ipados-fino-a-27-1-escal.html" class="card-title">CVE-2026-112547 | Apple iOS/iPadOS fino a 27.1 escalationi di privilegi</a>
+      <p class="card-desc">In Apple iOS and iPadOS fino a 27.1 stata rilevata una vulnerabilità di livello estremamente critico. Da questa vulnerabilità è interessato ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#87</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-78-cve-2026-112654-apple-ios-ipados-macos-safari-visi.html" class="card-title">CVE-2026-112654 | Apple iOS/iPadOS/macOS/Safari/visionOS buffer overflow</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in Apple iOS, iPadOS, macOS, Safari and visionOS. É interessato una funzione scon...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#88</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-79-cve-2026-112634-apple-ios-ipados-macos-visionos-pr.html" class="card-title">CVE-2026-112634 | Apple iOS/iPadOS/macOS/visionOS prima 26.7.2/27.2/15.8.2 rivelazione di informazioni</a>
+      <p class="card-desc">Una vulnerabilità di livello critico è stata rilevata in Apple iOS, iPadOS, macOS and visionOS. Riguarda una funzione sconosciuta. La manipo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#89</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-80-cve-2026-112658-apple-ios-ipados-macos-fino-a-27-1.html" class="card-title">CVE-2026-112658 | Apple iOS/iPadOS/macOS fino a 27.1 rivelazione di informazioni</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Apple iOS, iPadOS and macOS fino a 27.1. Viene interessata una funzione ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#90</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-81-cve-2026-112614-apple-ios-ipados-macos-fino-a-26-7.html" class="card-title">CVE-2026-112614 | Apple iOS/iPadOS/macOS fino a 26.7.1/27.1 buffer overflow</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Apple iOS, iPadOS and macOS fino a 26.7.1/27.1. Si considera coinvolta ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#91</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-82-cve-2026-112550-apple-macos-fino-a-15-8-1-26-7-1-2.html" class="card-title">CVE-2026-112550 | Apple macOS fino a 15.8.1/26.7.1/27.1 escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come critico in Apple macOS fino a 15.8.1/26.7.1/27.1. Risulta coinvolta una funzione sconos...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#92</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-83-cve-2026-112570-apple-macos-fino-a-15-8-1-26-7-1-2.html" class="card-title">CVE-2026-112570 | Apple macOS fino a 15.8.1/26.7.1/27.1 escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come estremamente critico in Apple macOS fino a 15.8.1/26.7.1/27.1. Da questa vulnerabili...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#93</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-84-cve-2026-112546-apple-ios-ipados-macos-tvos-vision.html" class="card-title">CVE-2026-112546 | Apple iOS/iPadOS/macOS/tvOS/visionOS/watchOS prima 26.7.2/27.2/15.8.2 rivelazione di informazioni</a>
+      <p class="card-desc">Un punto di debole di livello critico è stato rilevato in Apple iOS, iPadOS, macOS, tvOS, visionOS and watchOS. É interessato una funzione s...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#94</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-85-cve-2026-113907-apple-ios-ipados-macos-tvos-vision.html" class="card-title">CVE-2026-113907 | Apple iOS/iPadOS/macOS/tvOS/visionOS/watchOS prima 26.7.2/27.2/15.8.2 buffer overflow</a>
+      <p class="card-desc">Un punto di criticita di livello critico è stato rilevato in Apple iOS, iPadOS, macOS, tvOS, visionOS and watchOS. Riguarda una funzione sco...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#95</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-86-cve-2026-113950-apple-ios-ipados-macos-tvos-vision.html" class="card-title">CVE-2026-113950 | Apple iOS/iPadOS/macOS/tvOS/visionOS/watchOS fino a 27.1 buffer overflow</a>
+      <p class="card-desc">In Apple iOS, iPadOS, macOS, tvOS, visionOS and watchOS fino a 27.1 è stato trovato un punto critico di livello estremamente critico. Viene ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#96</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-87-cve-2026-113896-apple-ios-ipados-macos-visionos-pr.html" class="card-title">CVE-2026-113896 | Apple iOS/iPadOS/macOS/visionOS prima 26.7.2/27.2/15.8.2 race condition</a>
+      <p class="card-desc">In Apple iOS, iPadOS, macOS and visionOS è stata rilevato un punto critico di livello problematico. Si considera coinvolta una funzione scon...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#97</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-88-cve-2026-112706-apple-ios-ipados-tvos-visionos-wat.html" class="card-title">CVE-2026-112706 | Apple iOS/iPadOS/tvOS/visionOS/watchOS prima 26.7.2/27.2 escalationi di privilegi</a>
+      <p class="card-desc">Un punto critico di livello problematico è stato rilevato in Apple iOS, iPadOS, tvOS, visionOS and watchOS. Risulta coinvolta una funzione s...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#98</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-89-cve-2026-112707-apple-ios-ipados-fino-a-26-7-1-27-.html" class="card-title">CVE-2026-112707 | Apple iOS/iPadOS fino a 26.7.1/27.1 rivelazione di informazioni</a>
+      <p class="card-desc">In Apple iOS and iPadOS fino a 26.7.1/27.1 stata rilevata una vulnerabilità di livello problematico. Da questa vulnerabilità è interessato u...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#99</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-90-cve-2026-112678-apple-ios-ipados-macos-visionos-wa.html" class="card-title">CVE-2026-112678 | Apple iOS/iPadOS/macOS/visionOS/watchOS prima 26.7.2/27.2/15.8.2 escalationi di privilegi</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità di livello problematico in Apple iOS, iPadOS, macOS, visionOS and watchOS. É interessato una funzione sco...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#100</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-91-cve-2026-112593-apple-macos-fino-a-15-8-1-26-7-1-b.html" class="card-title">CVE-2026-112593 | Apple macOS fino a 15.8.1/26.7.1 buffer overflow</a>
+      <p class="card-desc">Una vulnerabilità di livello estremamente critico è stata rilevata in Apple macOS fino a 15.8.1/26.7.1. Riguarda una funzione sconosciuta. A...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#101</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-92-cve-2026-112675-apple-macos-fino-a-15-8-1-26-7-1-2.html" class="card-title">CVE-2026-112675 | Apple macOS fino a 15.8.1/26.7.1/27.1 escalationi di privilegi</a>
+      <p class="card-desc">È stata trovata una vulnerabilità classificata come problematico in Apple macOS fino a 15.8.1/26.7.1/27.1. Viene interessata una funzione sc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#102</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-93-cve-2026-112566-apple-ios-ipados-macos-tvos-vision.html" class="card-title">CVE-2026-112566 | Apple iOS/iPadOS/macOS/tvOS/visionOS/watchOS prima 26.7.2/27.2 negazione del servizio</a>
+      <p class="card-desc">È stata scoperta una vulnerabilità classificata come problematico in Apple iOS, iPadOS, macOS, tvOS, visionOS and watchOS. Si considera coin...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#103</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-94-cve-2026-113946-apple-macos-fino-a-27-1-buffer-ove.html" class="card-title">CVE-2026-113946 | Apple macOS fino a 27.1 buffer overflow</a>
+      <p class="card-desc">È stata rilevata una vulnerabilità classificata come estremamente critico in Apple macOS fino a 27.1. Risulta coinvolta una funzione sconosc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#104</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-95-cve-2026-116580-lxsmnsyc-seroval-fino-a-1-6-7-dese.html" class="card-title">CVE-2026-116580 | lxsmnsyc Seroval fino a 1.6.7 Deserializer fromJSON escalationi di privilegi</a>
+      <p class="card-desc">È stata individuata una vulnerabilità classificata come critico in lxsmnsyc Seroval fino a 1.6.7. Da questa vulnerabilità è interessato la f...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#105</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-96-cve-2026-113906-apple-ios-ipados-fino-a-26-7-1-27-.html" class="card-title">CVE-2026-113906 | Apple iOS/iPadOS fino a 26.7.1/27.1 negazione del servizio</a>
+      <p class="card-desc">Un punto di debole di livello problematico è stato rilevato in Apple iOS and iPadOS fino a 26.7.1/27.1. É interessato una funzione sconosciu...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#106</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-97-cve-2026-112696-apple-ios-ipados-macos-visionos-bu.html" class="card-title">CVE-2026-112696 | Apple iOS/iPadOS/macOS/visionOS buffer overflow</a>
+      <p class="card-desc">Un punto di criticita di livello estremamente critico è stato rilevato in Apple iOS, iPadOS, macOS and visionOS. Riguarda una funzione scono...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#107</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-98-cve-2026-113910-apple-ios-ipados-macos-tvos-vision.html" class="card-title">CVE-2026-113910 | Apple iOS/iPadOS/macOS/tvOS/visionOS/watchOS prima 26.7.2/27.2/15.8.2 rivelazione di informazioni</a>
+      <p class="card-desc">In Apple iOS, iPadOS, macOS, tvOS, visionOS and watchOS è stato trovato un punto critico di livello problematico. Viene interessata una funz...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#108</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-99-cve-2026-112679-apple-ios-ipados-macos-tvos-vision.html" class="card-title">CVE-2026-112679 | Apple iOS/iPadOS/macOS/tvOS/visionOS/watchOS fino a 27.1 buffer overflow</a>
+      <p class="card-desc">In Apple iOS, iPadOS, macOS, tvOS, visionOS and watchOS fino a 27.1 è stata rilevato un punto critico di livello estremamente critico. Si co...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#109</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-100-goahead-tls-flaws-allow-revoked-client-certificate.html" class="card-title">GoAhead TLS Flaws Allow Revoked Client Certificates and Enable Session Decryption</a>
+      <p class="card-desc">The GoAhead embedded web server loaded a certificate revocation list into its default TLS backend but never turned revocation checking on, s...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#110</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-102-microsoft-authenticator-flaw-let-permissionless-an.html" class="card-title">Microsoft Authenticator Flaw Let Permissionless Android Apps Steal Work Account Tokens</a>
+      <p class="card-desc">Microsoft has fixed a flaw in its Authenticator app for Android that let a malicious app with no permissions pose as a trusted Microsoft app...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#111</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-103-keystone-to-destroy-18-835-hardware-wallets-after-.html" class="card-title">Keystone to Destroy 18,835 Hardware Wallets After Hackers Steal Device Verification Key</a>
+      <p class="card-desc">An attacker who gained access to Keystone&#39;s website obtained the key that its hardware wallets use to prove they are genuine, the company sa...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#112</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-104-ai-generated-fake-login-pages-are-making-account-t.html" class="card-title">AI-Generated Fake Login Pages Are Making Account Takeovers Easier</a>
+      <p class="card-desc">Fake login pages are nothing new, but generative AI is making them easier to build and more convincing. Attackers can recreate familiar logi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#113</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-105-lazarus-abuses-south-korean-security-software-to-d.html" class="card-title">Lazarus Abuses South Korean Security Software to Deploy Malware Using Post-Quantum Encryption</a>
+      <p class="card-desc">The North Korea-linked Lazarus Group has been attributed to a cyber espionage campaign dubbed Operation FlashHole targeting at least three o...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#114</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-106-australia-gets-into-amadey-malware-backend-cuts-of.html" class="card-title">Australia Gets Into Amadey Malware Backend, Cuts Off Access to 180,000 Infected Computers</a>
+      <p class="card-desc">A criminal using the Amadey malware can no longer access or steal data from 180,000 infected computers around the world, including some in A...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#115</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-107-openai-compaction-flaw-let-researchers-bypass-hidd.html" class="card-title">OpenAI Compaction Flaw Let Researchers Bypass Hidden Reasoning Protections</a>
+      <p class="card-desc">OpenAI&#39;s compaction feature, which shrinks a long conversation to save space, could be turned into a way to copy a model&#39;s hidden reasoning ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#116</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-108-attackers-hijack-dahua-ip-cameras-in-ukraine-using.html" class="card-title">Attackers Hijack Dahua IP Cameras in Ukraine Using P2P Access and Auth Weaknesses</a>
+      <p class="card-desc">The Computer Emergency Response Team of Ukraine (CERT-UA) has issued an alert warning of unauthorized remote access to video surveillance sy...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#117</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-110-hackers-infect-953-online-stores-with-scanner-evad.html" class="card-title">Hackers Infect 953 Online Stores With Scanner-Evading JavaScript, Mostly on Magento</a>
+      <p class="card-desc">An unknown threat actor has infected 953 online stores, most of them running Magento, as part of a long-running campaign active since July 2...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#118</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-111-warp-discloses-breach-exposing-ai-agent-logs-user-.html" class="card-title">Warp discloses breach exposing AI agent logs, user telemetry data</a>
+      <p class="card-desc">Agent decision logs and telemetry data belonging to Warp agentic development environment users were exposed in an attack on a third-party ve...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#119</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-112-tailscale-warns-of-ssh-flaws-allowing-root-privile.html" class="card-title">Tailscale warns of SSH flaws allowing root privilege escalation</a>
+      <p class="card-desc">The Tailscale security team is working to patch almost a dozen security vulnerabilities that could be exploited to steal credentials, crash ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#120</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-113-the-huntress-tragic-quadrant-ranking-threats-hitti.html" class="card-title">The Huntress Tragic Quadrant: Ranking Threats Hitting Businesses Hardest</a>
+      <p class="card-desc">Attackers are increasingly abusing legitimate IT tools, Microsoft 365 sessions, and everyday workflows to compromise businesses without trig...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#121</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-115-energy-giant-engie-discloses-data-breach-affecting.html" class="card-title">Energy giant ENGIE discloses data breach affecting customers</a>
+      <p class="card-desc">French energy giant ENGIE, one of the world&#39;s largest power and natural gas providers, confirmed that attackers stole customer data after br...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#122</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-117-university-of-copenhagen-data-breach-exposes-data-.html" class="card-title">University of Copenhagen data breach exposes data of 525,000 people</a>
+      <p class="card-desc">The University of Copenhagen in Denmark confirmed that hackers accessed one of its test environments containing personal data belonging to 5...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#123</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-118-former-pentester-used-artex-ai-to-steal-8-2-millio.html" class="card-title">Former pentester used ARTEX AI to steal 8.2 million data records</a>
+      <p class="card-desc">South Korean police identified seven suspects linked to a cybercrime operation that breached more than 90 organizations in the country, with...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#124</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-119-openai-launches-gpt-6-1-terra-with-3x-faster-ai-ag.html" class="card-title">OpenAI launches GPT-6.1 Terra with 3x faster AI agents, 50% lower pricing</a>
+      <p class="card-desc">OpenAI has launched GPT-6.1 Terra, a new model focused on computer use, visual reasoning, coding, and everyday work, while costing significa...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#125</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-120-dreamhost-forces-password-resets-in-ongoing-incide.html" class="card-title">DreamHost forces password resets in ongoing &quot;incident&quot;</a>
+      <p class="card-desc">DreamHost has forced password resets for email and FTP/SFTP users following an incident that disrupted connections to the File Manager inter...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#126</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-121-aokigahara-stealer-targets-developer-keyrings-amp-.html" class="card-title">&#39;Aokigahara&#39; Stealer Targets &#39;Developer Keyrings&#39; &amp;amp; AI Assistants</a>
+      <p class="card-desc">The malware&#39;s focus on AI tools expands the traditional infostealer playbook to expose a forest of AI sessions, sensitive business data, and...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#127</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-122-so-many-ai-security-benchmarks-but-none-tell-the-w.html" class="card-title">So Many AI Security Benchmarks, But None Tell the Whole Story</a>
+      <p class="card-desc">Measuring AI model security gets complex, fast, thanks to a growing patchwork of benchmarks targeting different variables in the equation. B...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#128</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-123-risks-amp-rewards-how-ai-is-redefining-the-ciso-s-.html" class="card-title">Risks &amp;amp; Rewards: How AI Is Redefining the CISO&#39;s Role</a>
+      <p class="card-desc">Nvidia security executive Mark Weatherford says CISOs must help business leaders weigh AI&#39;s pros and cons, and ensure those deploying it own...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#129</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-124-in-the-wild-attack-abuses-ai-agents-trust-in-markd.html" class="card-title">In-the-Wild Attack Abuses AI Agents&#39; Trust in Markdown</a>
+      <p class="card-desc">A new AI agent prompt injection technique exploits how coding assistants consume local instruction files, blurring the line between text doc...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#130</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-125-criminal-ip-joins-interpol-s-gateway-initiative-to.html" class="card-title">Criminal IP Joins INTERPOL’s Gateway Initiative to Support Global Cybercrime Efforts</a>
+      <p class="card-desc">Torrance, United States / California, October 27th, 2026, CyberNewswire AI SPERA, the company behind the cyber threat intelligence and attac...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#131</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-126-before-your-soc-investigates-what-16k-security-tea.html" class="card-title">Before Your SOC Investigates: What 16K+ Security Teams Already Know</a>
+      <p class="card-desc">What if some of the threats reaching your organization&amp;#8217;s environment had already been identified elsewhere, before your security team ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#132</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-128-researchers-exploit-openai-api-flaw-to-extract-hid.html" class="card-title">Researchers Exploit OpenAI API Flaw to Extract Hidden GPT-5.6 Reasoning Traces</a>
+      <p class="card-desc">Researchers at Xint found an OpenAI API flaw that exposed hidden reasoning in GPT-5.6 models by routing prompts through a conversation-compa...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#133</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-129-cisa-offers-two-free-tools-to-detect-security-misc.html" class="card-title">CISA Offers Two Free Tools to Detect Security Misconfigurations in Microsoft 365 and Google Workspace</a>
+      <p class="card-desc">The U.S. Cybersecurity and Infrastructure Security Agency (CISA) offers two free tools to help organizations find security misconfigurations...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#134</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-130-israeli-ad-tech-firm-accused-on-using-online-ads-t.html" class="card-title">Israeli Ad Tech Firm Accused on Using Online Ads to Track Starlink Users</a>
+      <p class="card-desc">Israeli advertising company Discover-Tech is accused of using online ads to track people connected to SpaceX’s Starlink satellite internet s...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#135</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-131-hackers-use-fake-fedex-invoices-to-deploy-sirius-b.html" class="card-title">Hackers Use Fake FedEx Invoices to Deploy Sirius Backdoor and Evade Windows Security</a>
+      <p class="card-desc">Hackers are sending fake FedEx tax invoices to trick users into installing a stealthy backdoor on Windows. The malware, called Sirius Backdo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#136</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-132-hackers-abuse-signed-chatgpt-and-claude-binaries-t.html" class="card-title">Hackers Abuse Signed ChatGPT and Claude Binaries to Deploy Malware Through Fake GitHub Downloads</a>
+      <p class="card-desc">A malware campaign known as Yoba targets users by leveraging the popularity of AI tools like ChatGPT and Claude to trick them into installin...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#137</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-135-tailscale-rushes-patches-after-uncoordinated-discl.html" class="card-title">Tailscale Rushes Patches After Uncoordinated Disclosure of ‘Tailworm’ Flaws</a>
+      <p class="card-desc">Tailscale is preparing a patch for Tailscale SSH flaws whose details went public over the weekend, before any fixes had been released. The p...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#138</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-136-vendor-key-leak-puts-data-of-238-000-denver-health.html" class="card-title">Vendor Key Leak Puts Data of 238,000 Denver Health Plan Members at Risk</a>
+      <p class="card-desc">A leaked SquareML access key could have been used to access a database containing personal and health information. The post Vendor Key Leak ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#139</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-138-unexplained-dreamhost-incident-prompts-email-ftp-p.html" class="card-title">Unexplained DreamHost Incident Prompts Email, FTP Password Resets</a>
+      <p class="card-desc">The company says it reacted to an issue affecting some of its systems, including DreamHost webmail. The post Unexplained DreamHost Incident ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#140</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-140-risks-spelled-out-for-anthropic-investors-include-.html" class="card-title">Risks Spelled Out for Anthropic Investors Include Possible Harms From Runaway AI</a>
+      <p class="card-desc">Anthropic presents its own initial public offering as a step toward mitigating the risks it believes AI poses. The post Risks Spelled Out fo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#141</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-141-this-is-fine-what-netscaler-zero-days-tell-us-abou.html" class="card-title">This is Fine: What NetScaler Zero-Days Tell Us About the New Normal</a>
+      <p class="card-desc">Keep your patch management pipelines primed in case another round of Citrix NetScaler patches get released soon. The post This is Fine: What...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#142</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-142-dead-popcorn-time-updater-put-millions-of-computer.html" class="card-title">Dead Popcorn Time Updater Put Millions of Computers at Risk of Takeover</a>
+      <p class="card-desc">Running at system boot, it periodically polled the update domain to execute any code served, with full privileges. The post Dead Popcorn Tim...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#143</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-143-maritime-coalition-launches-free-vulnerability-dat.html" class="card-title">Maritime Coalition Launches Free Vulnerability Database for Ship and Port Systems</a>
+      <p class="card-desc">Blue Initiative indexes nearly 30,000 IT and OT vulnerabilities relevant to ships and ports, 37 of them in maritime-specific products. The p...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#144</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-144-cybersecurity-issue-forces-a-major-new-mexico-hosp.html" class="card-title">Cybersecurity Issue Forces a Major New Mexico Hospital to Divert Patients and Close Clinics</a>
+      <p class="card-desc">The University of New Mexico Health System told people not to show up at its main hospital in Albuquerque and canceled appointments at more ...</p>
+    </div>
+</div>
+
+<div class="no-results" id="no-results">
+  <p>Nessun risultato trovato</p>
+</div>
+
+<footer class="footer">
+  <p>Cyber Security News Dashboard - Generato automaticamente senza amore o sentimento</p>
+  <p>Creato (con n8n e un pochino di javascript scritto da un LLM) da: <a href="https://www.linkedin.com/in/mocciaalessandro" target="_blank">Alessandro</a></p>
+</footer>
+
+<script>
+(function() {
+  const cards = document.querySelectorAll('.card');
+  const buttons = document.querySelectorAll('[data-filter]');
+  const searchInput = document.getElementById('search');
+  const noResults = document.getElementById('no-results');
+  
+  let currentFilter = 'all';
+  let searchTerm = '';
+
+  const filterCards = () => {
+    let visibleCount = 0;
+    
+    cards.forEach(card => {
+      const matchesFilter = currentFilter === 'all' || card.dataset.severity === currentFilter;
+      const matchesSearch = !searchTerm || card.textContent.toLowerCase().includes(searchTerm);
+      const isVisible = matchesFilter && matchesSearch;
+      
+      card.style.display = isVisible ? 'block' : 'none';
+      if (isVisible) visibleCount++;
+    });
+    
+    noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+  };
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      filterCards();
+    });
+  });
+
+  let debounceTimer;
+  searchInput.addEventListener('input', (e) => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      searchTerm = e.target.value.toLowerCase();
+      filterCards();
+    }, 150);
+  });
+})();
+</script>
+
+</body>
+</html>
