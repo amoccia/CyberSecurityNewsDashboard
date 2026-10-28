@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyber Security News Dashboard</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --primary: #00ff9f;
+      --primary-dim: #00cc7a;
+      --card-bg: #111;
+      --border: rgba(0, 255, 159, 0.2);
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--primary);
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.5;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      font-size: clamp(1.2rem, 4vw, 2rem);
+      text-shadow: 0 0 20px var(--primary);
+      margin: 0 0 10px 0;
+    }
+    .header time {
+      font-size: 0.85rem;
+      opacity: 0.7;
+    }
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 25px;
+    }
+    .stat {
+      padding: 8px 15px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      background: var(--card-bg);
+    }
+    .stat.critical { border-color: #ff4444; }
+    .stat.high { border-color: #ff8c00; }
+    .stat.medium { border-color: #ffd700; }
+    .stat.low { border-color: var(--primary-dim); }
+    .controls {
+      max-width: 900px;
+      margin: 0 auto 25px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .search-wrapper {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+    .search-wrapper::before {
+      content: '🔍';
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+    }
+    input {
+      width: 100%;
+      padding: 10px 10px 10px 35px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--primary);
+      font-family: inherit;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .filter-buttons {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 10px 15px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--primary);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    button:hover, button.active {
+      background: var(--primary);
+      color: var(--bg);
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      display: grid;
+      gap: 15px;
+    }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 15px;
+      background: var(--card-bg);
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .index {
+      font-size: 12px;
+      opacity: 0.6;
+    }
+    .badge {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    .critical { background: #ff4444; color: #fff; }
+    .high { background: #ff8c00; color: #000; }
+    .medium { background: #ffd700; color: #000; }
+    .low { background: var(--primary-dim); color: #000; }
+    .card-title {
+      display: block;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: bold;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .card-title:hover { text-decoration: underline; }
+    .card-desc {
+      font-size: 12px;
+      color: var(--primary-dim);
+      margin: 0;
+    }
+    .no-results {
+      text-align: center;
+      padding: 40px;
+      opacity: 0.6;
+      display: none;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      opacity: 0.6;
+      text-align: center;
+    }
+    @media (max-width: 600px) {
+      .controls { flex-direction: column; }
+      .filter-buttons { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🛡️ CYBER SECURITY NEWS DASHBOARD</h1>
+  <time datetime="2026-10-28T02:01:46.701Z">28/10/2026, 02:01</time>
+</div>
+
+<div class="stats">
+  <div class="stat">📊 Totale: <strong>47</strong></div>
+  <div class="stat critical">🔴 Critical: <strong>9</strong></div>
+  <div class="stat high">🟠 High: <strong>0</strong></div>
+  <div class="stat medium">🟡 Medium: <strong>0</strong></div>
+  <div class="stat low">🟢 Low: <strong>38</strong></div>
+</div>
+
+<div class="controls">
+  <div class="search-wrapper">
+    <input type="search" id="search" placeholder="Cerca nelle notizie..." aria-label="Cerca">
+  </div>
+  <div class="filter-buttons">
+    <button class="active" data-filter="all">Tutte</button>
+    <button data-filter="critical">Critical</button>
+    <button data-filter="high">High</button>
+    <button data-filter="medium">Medium</button>
+    <button data-filter="low">Low</button>
+  </div>
+</div>
+
+<div class="container" id="cards">
+  
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#01</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-4-apple-backports-fix-for-exploited-coregraphics-fla.html" class="card-title">Apple Backports Fix for Exploited CoreGraphics Flaw to Older iPhones and iPads</a>
+      <p class="card-desc">Apple on Monday backported fixes for a high-severity security flaw that was exploited in real-world cyber attacks to older devices. The vuln...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#02</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-12-cisa-confirms-active-exploitation-of-two-php2shell.html" class="card-title">CISA Confirms Active Exploitation of Two PHP2Shell Flaws Enabling Remote Code Execution</a>
+      <p class="card-desc">The U.S. Cybersecurity and Infrastructure Security Agency (CISA) on Monday confirmed active exploitation of the recently patched PHP2Shell f...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#03</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-21-apple-backports-coregraphics-zero-day-patches-to-o.html" class="card-title">Apple backports CoreGraphics zero-day patches to older iPhones</a>
+      <p class="card-desc">​Apple has backported security patches released last month to older iPhones and iPads, addressing a zero-day bug exploited in &quot;extremely sop...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#04</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-23-cisa-confirms-php2shell-vulnerabilities-now-exploi.html" class="card-title">CISA confirms PHP2Shell vulnerabilities now exploited in attacks</a>
+      <p class="card-desc">The U.S. Cybersecurity and Infrastructure Security Agency (CISA) has added the PHP2Shell vulnerabilities to its catalog of actively exploite...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#05</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-31-critical-goahead-tls-flaws-could-expose-hundreds-o.html" class="card-title">Critical GoAhead TLS Flaws Could Expose Hundreds of Millions of Devices to Attacks</a>
+      <p class="card-desc">Three new security flaws affect GoAhead, a small web server that device makers build into routers, printers, gateways, and industrial contro...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#06</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-37-critical-hashicorp-consul-kubernetes-flaw-allows-a.html" class="card-title">Critical HashiCorp Consul Kubernetes Flaw Allows Attackers to Gain Elevated Privileges</a>
+      <p class="card-desc">HashiCorp has released fixes for a Consul-k8s authorization bypass that could allow an attacker to gain elevated Consul privileges from anot...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#07</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-38-apple-ios-27-2-released-with-fixes-for-163-vulnera.html" class="card-title">Apple iOS 27.2 Released With Fixes for 163 Vulnerabilities, Including Fix for Critical WebKit RCE</a>
+      <p class="card-desc">Apple released iOS 27.2 and iPadOS 27.2 on October 26, 2026, with fixes for 163 security flaws. The update covers iPhone 11 and later and a ...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#08</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-41-hpe-patches-dozens-of-critical-flaws-in-networking.html" class="card-title">HPE Patches Dozens of Critical Flaws in Networking Products</a>
+      <p class="card-desc">Eight max-severity security defects could lead to remote code execution and authentication bypass. The post HPE Patches Dozens of Critical F...</p>
+    </div>
+    <div class="card" data-severity="critical">
+      <div class="card-top">
+        <span class="index">#09</span>
+        <span class="badge critical">critical</span>
+      </div>
+      <a href="news-43-ios-macos-27-2-patch-286-bugs-fix-for-exploited-fl.html" class="card-title">iOS, macOS 27.2 Patch 286 Bugs; Fix for Exploited Flaw Backported to iOS 18</a>
+      <p class="card-desc">Apple patched 286 vulnerabilities in iOS and macOS 27.2 and brought the fix for an exploited CoreGraphics zero-day to older iPhones. The pos...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#10</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-1-cve-2026-88781-asus-firmware-i-o-command-negazione.html" class="card-title">CVE-2026-88781 | ASUS Firmware I/O Command negazione del servizio (EUVD-2026-110597)</a>
+      <p class="card-desc">Un punto di debole di livello estremamente critico è stato rilevato in ASUS Firmware. É interessato una funzione sconosciuta del componente ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#11</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-2-cyberstrikeai-uses-44-ai-agents-to-automate-hackin.html" class="card-title">CyberStrikeAI Uses 44 AI Agents to Automate Hacking Operations Against Japan Targets</a>
+      <p class="card-desc">Cybersecurity researchers have disclosed details of three cyber attacks targeting organizations in Japan in which artificial intelligence (A...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#12</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-3-goahead-tls-flaws-allow-revoked-client-certificate.html" class="card-title">GoAhead TLS Flaws Allow Revoked Client Certificates and Enable Session Decryption</a>
+      <p class="card-desc">The GoAhead embedded web server loaded a certificate revocation list into its default TLS backend but never turned revocation checking on, s...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#13</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-5-microsoft-authenticator-flaw-let-permissionless-an.html" class="card-title">Microsoft Authenticator Flaw Let Permissionless Android Apps Steal Work Account Tokens</a>
+      <p class="card-desc">Microsoft has fixed a flaw in its Authenticator app for Android that let a malicious app with no permissions pose as a trusted Microsoft app...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#14</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-6-keystone-to-destroy-18-835-hardware-wallets-after-.html" class="card-title">Keystone to Destroy 18,835 Hardware Wallets After Hackers Steal Device Verification Key</a>
+      <p class="card-desc">An attacker who gained access to Keystone&#39;s website obtained the key that its hardware wallets use to prove they are genuine, the company sa...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#15</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-7-ai-generated-fake-login-pages-are-making-account-t.html" class="card-title">AI-Generated Fake Login Pages Are Making Account Takeovers Easier</a>
+      <p class="card-desc">Fake login pages are nothing new, but generative AI is making them easier to build and more convincing. Attackers can recreate familiar logi...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#16</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-8-lazarus-abuses-south-korean-security-software-to-d.html" class="card-title">Lazarus Abuses South Korean Security Software to Deploy Malware Using Post-Quantum Encryption</a>
+      <p class="card-desc">The North Korea-linked Lazarus Group has been attributed to a cyber espionage campaign dubbed Operation FlashHole targeting at least three o...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#17</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-9-australia-gets-into-amadey-malware-backend-cuts-of.html" class="card-title">Australia Gets Into Amadey Malware Backend, Cuts Off Access to 180,000 Infected Computers</a>
+      <p class="card-desc">A criminal using the Amadey malware can no longer access or steal data from 180,000 infected computers around the world, including some in A...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#18</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-10-openai-compaction-flaw-let-researchers-bypass-hidd.html" class="card-title">OpenAI Compaction Flaw Let Researchers Bypass Hidden Reasoning Protections</a>
+      <p class="card-desc">OpenAI&#39;s compaction feature, which shrinks a long conversation to save space, could be turned into a way to copy a model&#39;s hidden reasoning ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#19</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-11-attackers-hijack-dahua-ip-cameras-in-ukraine-using.html" class="card-title">Attackers Hijack Dahua IP Cameras in Ukraine Using P2P Access and Auth Weaknesses</a>
+      <p class="card-desc">The Computer Emergency Response Team of Ukraine (CERT-UA) has issued an alert warning of unauthorized remote access to video surveillance sy...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#20</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-13-japan-s-gmo-urges-customers-to-shut-down-pcs-amid-.html" class="card-title">Japan&#39;s GMO urges customers to shut down PCs amid ransomware threat</a>
+      <p class="card-desc">The GMO Group has urged customers to disconnect their systems from the internet and shut down computers after a threat actor who breached th...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#21</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-14-openai-s-gpt-6-1-terra-is-safer-overall-but-shows-.html" class="card-title">OpenAI&#39;s GPT-6.1 Terra is safer overall, but shows more destructive-action flags in tests</a>
+      <p class="card-desc">OpenAI confirmed GPT-6.1 Terra is safer overall than some of its older models, but its safety testing also found other problems. [...]</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#22</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-15-unm-health-ransomware-attack-disrupts-patient-care.html" class="card-title">UNM Health ransomware attack disrupts patient care, surgeries</a>
+      <p class="card-desc">The University of New Mexico Health Sciences Center disclosed a cyberattack that caused system outages and disrupted patient care and academ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#23</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-16-hackers-hijack-convertr-analytics-script-to-steal-.html" class="card-title">Hackers hijack Convertr analytics script to steal payment card data</a>
+      <p class="card-desc">A credit card skimming group reportedly compromised a shared analytics script used by e-commerce platform Convertr to steal shoppers&#39; paymen...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#24</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-17-microsoft-releases-windows-oob-updates-to-distrust.html" class="card-title">Microsoft releases Windows OOB updates to distrust eMudhra certificates</a>
+      <p class="card-desc">Microsoft has released out-of-band (OOB) Windows updates to remove trust in certificates tied to compromised eMudhra certificate authority k...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#25</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-18-warp-discloses-breach-exposing-ai-agent-logs-user-.html" class="card-title">Warp discloses breach exposing AI agent logs, user telemetry data</a>
+      <p class="card-desc">Agent decision logs and telemetry data belonging to Warp agentic development environment users were exposed in an attack on a third-party ve...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#26</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-19-tailscale-warns-of-ssh-flaws-allowing-root-privile.html" class="card-title">Tailscale warns of SSH flaws allowing root privilege escalation</a>
+      <p class="card-desc">The Tailscale security team is working to patch almost a dozen security vulnerabilities that could be exploited to steal credentials, crash ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#27</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-20-the-huntress-tragic-quadrant-ranking-threats-hitti.html" class="card-title">The Huntress Tragic Quadrant: Ranking Threats Hitting Businesses Hardest</a>
+      <p class="card-desc">Attackers are increasingly abusing legitimate IT tools, Microsoft 365 sessions, and everyday workflows to compromise businesses without trig...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#28</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-22-energy-giant-engie-discloses-data-breach-affecting.html" class="card-title">Energy giant ENGIE discloses data breach affecting customers</a>
+      <p class="card-desc">French energy giant ENGIE, one of the world&#39;s largest power and natural gas providers, confirmed that attackers stole customer data after br...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#29</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-24-3-frameworks-to-protect-cisos-amp-orgs-against-ai-.html" class="card-title">3 Frameworks to Protect CISOs &amp;amp; Orgs Against AI Liability</a>
+      <p class="card-desc">Cyber leaders can get ahead of AI liability with rigorous documentation, transparency, and smart contract negotiations with AI vendors.</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#30</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-25-external-teams-chats-anchor-15-minute-malware-deli.html" class="card-title">External Teams Chats Anchor 15-Minute Malware Delivery</a>
+      <p class="card-desc">Main bombing sis getting a new look with a wide-scale, ongoing social engineering campaign that might be tied to the Black Basta ransomware ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#31</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-26-sboms-alone-can-t-reveal-the-scope-of-a-supply-cha.html" class="card-title">SBOMs Alone Can&#39;t Reveal the Scope of a Supply Chain Attack</a>
+      <p class="card-desc">A recent Shai-Hulud attack shows defenders need real-time visibility into production code and affected services to respond to supply chain c...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#32</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-27-beware-the-slasher-ai-could-kill-off-cybersecurity.html" class="card-title">Beware the Slasher: AI Could Kill Off Cybersecurity Pros&#39; Skills</a>
+      <p class="card-desc">Nathan Hamiel outlines potential SecOps horror in the AI midst, as core technical capabilities go the way of reading an atlas or remembering...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#33</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-28-aokigahara-stealer-targets-developer-keyrings-amp-.html" class="card-title">&#39;Aokigahara&#39; Stealer Targets &#39;Developer Keyrings&#39; &amp;amp; AI Assistants</a>
+      <p class="card-desc">The malware&#39;s focus on AI tools expands the traditional infostealer playbook to expose a forest of AI sessions, sensitive business data, and...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#34</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-29-criminal-ip-joins-interpol-s-gateway-initiative-to.html" class="card-title">Criminal IP Joins INTERPOL’s Gateway Initiative to Support Global Cybercrime Efforts</a>
+      <p class="card-desc">Torrance, United States / California, October 27th, 2026, CyberNewswire AI SPERA, the company behind the cyber threat intelligence and attac...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#35</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-30-before-your-soc-investigates-what-16k-security-tea.html" class="card-title">Before Your SOC Investigates: What 16K+ Security Teams Already Know</a>
+      <p class="card-desc">What if some of the threats reaching your organization&amp;#8217;s environment had already been identified elsewhere, before your security team ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#36</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-32-researchers-exploit-openai-api-flaw-to-extract-hid.html" class="card-title">Researchers Exploit OpenAI API Flaw to Extract Hidden GPT-5.6 Reasoning Traces</a>
+      <p class="card-desc">Researchers at Xint found an OpenAI API flaw that exposed hidden reasoning in GPT-5.6 models by routing prompts through a conversation-compa...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#37</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-33-cisa-offers-two-free-tools-to-detect-security-misc.html" class="card-title">CISA Offers Two Free Tools to Detect Security Misconfigurations in Microsoft 365 and Google Workspace</a>
+      <p class="card-desc">The U.S. Cybersecurity and Infrastructure Security Agency (CISA) offers two free tools to help organizations find security misconfigurations...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#38</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-34-israeli-ad-tech-firm-accused-on-using-online-ads-t.html" class="card-title">Israeli Ad Tech Firm Accused on Using Online Ads to Track Starlink Users</a>
+      <p class="card-desc">Israeli advertising company Discover-Tech is accused of using online ads to track people connected to SpaceX’s Starlink satellite internet s...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#39</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-35-hackers-use-fake-fedex-invoices-to-deploy-sirius-b.html" class="card-title">Hackers Use Fake FedEx Invoices to Deploy Sirius Backdoor and Evade Windows Security</a>
+      <p class="card-desc">Hackers are sending fake FedEx tax invoices to trick users into installing a stealthy backdoor on Windows. The malware, called Sirius Backdo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#40</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-36-hackers-abuse-signed-chatgpt-and-claude-binaries-t.html" class="card-title">Hackers Abuse Signed ChatGPT and Claude Binaries to Deploy Malware Through Fake GitHub Downloads</a>
+      <p class="card-desc">A malware campaign known as Yoba targets users by leveraging the popularity of AI tools like ChatGPT and Claude to trick them into installin...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#41</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-39-tailscale-rushes-patches-after-uncoordinated-discl.html" class="card-title">Tailscale Rushes Patches After Uncoordinated Disclosure of ‘Tailworm’ Flaws</a>
+      <p class="card-desc">Tailscale is preparing a patch for Tailscale SSH flaws whose details went public over the weekend, before any fixes had been released. The p...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#42</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-40-vendor-key-leak-puts-data-of-238-000-denver-health.html" class="card-title">Vendor Key Leak Puts Data of 238,000 Denver Health Plan Members at Risk</a>
+      <p class="card-desc">A leaked SquareML access key could have been used to access a database containing personal and health information. The post Vendor Key Leak ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#43</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-42-unexplained-dreamhost-incident-prompts-email-ftp-p.html" class="card-title">Unexplained DreamHost Incident Prompts Email, FTP Password Resets</a>
+      <p class="card-desc">The company says it reacted to an issue affecting some of its systems, including DreamHost webmail. The post Unexplained DreamHost Incident ...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#44</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-44-risks-spelled-out-for-anthropic-investors-include-.html" class="card-title">Risks Spelled Out for Anthropic Investors Include Possible Harms From Runaway AI</a>
+      <p class="card-desc">Anthropic presents its own initial public offering as a step toward mitigating the risks it believes AI poses. The post Risks Spelled Out fo...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#45</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-45-this-is-fine-what-netscaler-zero-days-tell-us-abou.html" class="card-title">This is Fine: What NetScaler Zero-Days Tell Us About the New Normal</a>
+      <p class="card-desc">Keep your patch management pipelines primed in case another round of Citrix NetScaler patches get released soon. The post This is Fine: What...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#46</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-46-dead-popcorn-time-updater-put-millions-of-computer.html" class="card-title">Dead Popcorn Time Updater Put Millions of Computers at Risk of Takeover</a>
+      <p class="card-desc">Running at system boot, it periodically polled the update domain to execute any code served, with full privileges. The post Dead Popcorn Tim...</p>
+    </div>
+    <div class="card" data-severity="low">
+      <div class="card-top">
+        <span class="index">#47</span>
+        <span class="badge low">low</span>
+      </div>
+      <a href="news-47-maritime-coalition-launches-free-vulnerability-dat.html" class="card-title">Maritime Coalition Launches Free Vulnerability Database for Ship and Port Systems</a>
+      <p class="card-desc">Blue Initiative indexes nearly 30,000 IT and OT vulnerabilities relevant to ships and ports, 37 of them in maritime-specific products. The p...</p>
+    </div>
+</div>
+
+<div class="no-results" id="no-results">
+  <p>Nessun risultato trovato</p>
+</div>
+
+<footer class="footer">
+  <p>Cyber Security News Dashboard - Generato automaticamente senza amore o sentimento</p>
+  <p>Creato (con n8n e un pochino di javascript scritto da un LLM) da: <a href="https://www.linkedin.com/in/mocciaalessandro" target="_blank">Alessandro</a></p>
+</footer>
+
+<script>
+(function() {
+  const cards = document.querySelectorAll('.card');
+  const buttons = document.querySelectorAll('[data-filter]');
+  const searchInput = document.getElementById('search');
+  const noResults = document.getElementById('no-results');
+  
+  let currentFilter = 'all';
+  let searchTerm = '';
+
+  const filterCards = () => {
+    let visibleCount = 0;
+    
+    cards.forEach(card => {
+      const matchesFilter = currentFilter === 'all' || card.dataset.severity === currentFilter;
+      const matchesSearch = !searchTerm || card.textContent.toLowerCase().includes(searchTerm);
+      const isVisible = matchesFilter && matchesSearch;
+      
+      card.style.display = isVisible ? 'block' : 'none';
+      if (isVisible) visibleCount++;
+    });
+    
+    noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+  };
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      filterCards();
+    });
+  });
+
+  let debounceTimer;
+  searchInput.addEventListener('input', (e) => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      searchTerm = e.target.value.toLowerCase();
+      filterCards();
+    }, 150);
+  });
+})();
+</script>
+
+</body>
+</html>
